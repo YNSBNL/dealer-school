@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-const STORAGE_KEY = "croupierpro-theme";
+const STORAGE_KEY = "dealer-school-theme";
 
 const ThemeContext = createContext({
   theme: "system",

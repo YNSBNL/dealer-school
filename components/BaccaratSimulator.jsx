@@ -1,6 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { saveSession } from "@/lib/api";
-import SimulatorHeader from "@/components/SimulatorHeader";
 
 // ── ENGINE ──
 const SUITS=["♠","♥","♦","♣"],SC={"♠":"#1a1a1a","♥":"#C62828","♦":"#C62828","♣":"#1a1a1a"};
@@ -21,7 +19,6 @@ function bankerDraws(bs,p3){
   return false;
 }
 
-// Pre-compute full resolution
 function resolve(pc,bc,shoe){
   let s=[...shoe],p=[...pc],b=[...bc],p3=null,b3=null;
   const ps=hs(p),bs=hs(b),nat=ps>=8||bs>=8;
@@ -47,7 +44,7 @@ function ThirdCardTable(){
   return(
     <div style={{fontSize:10,color:"#BFB9AD",lineHeight:1.6}}>
       <div style={{fontWeight:700,color:"#4FC3F7",marginBottom:4}}>Player :</div>
-      <div style={{marginBottom:6}}>0-5 → Carte · 6-7 → Reste · 8-9 → Naturel</div>
+      <div style={{marginBottom:6}}>0-5 → Carte · Reste · 8-9 → Naturel</div>
       <div style={{fontWeight:700,color:"#EF5350",marginBottom:4}}>Banker (si Player a tiré) :</div>
       <div style={{display:"grid",gridTemplateColumns:"auto 1fr",gap:"1px 10px",fontSize:9}}>
         <span style={{fontWeight:600}}>0-2</span><span>Tire toujours</span>
@@ -64,22 +61,19 @@ function ThirdCardTable(){
 }
 
 // ── MAIN ──
-export default function PuntoBancoSimulator(){
+export default function BaccaratSimulator(){
   const [screen,setScreen]=useState("menu");
   const [diff,setDiff]=useState(1);
   const [shoe,setShoe]=useState([]);
   const [playerCards,setPlayerCards]=useState([]);
   const [bankerCards,setBankerCards]=useState([]);
   const [phase,setPhase]=useState("idle");
-  // L1 steps: "natural" | "playerDraw" | "bankerDraw" | "done"
   const [step,setStep]=useState("idle");
   const [resolution,setResolution]=useState(null);
   const [wrong,setWrong]=useState(false);
   const [stats,setStats]=useState({rounds:0,ok:0,total:0});
-  // Cards revealed progressively
   const [p3Shown,setP3Shown]=useState(false);
   const [b3Shown,setB3Shown]=useState(false);
-  // L2: Calcul Égalité (x8)
   const [l2Num,setL2Num]=useState(0);
   const [l2Input,setL2Input]=useState("");
   const [l2Comp,setL2Comp]=useState(false);
@@ -91,37 +85,6 @@ export default function PuntoBancoSimulator(){
   const l2Ref=useRef(null);
   const l2TimerRef=useRef(null);
   const [winnerWrong,setWinnerWrong]=useState(false);
-  const lastSavedRoundRef=useRef(0);
-  const [viewportWidth,setViewportWidth]=useState(1440);
-
-  useEffect(()=>{
-    const updateViewport=()=>setViewportWidth(window.innerWidth||1440);
-    updateViewport();
-    window.addEventListener("resize", updateViewport);
-    return ()=>window.removeEventListener("resize", updateViewport);
-  },[]);
-
-  const isMobile = viewportWidth <= 640;
-  const isDesktopWide = viewportWidth >= 1400;
-  const cardSize = viewportWidth >= 1400 ? "lg" : viewportWidth >= 768 ? "md" : "sm";
-
-  useEffect(()=>{
-    if(stats.rounds>lastSavedRoundRef.current){
-      lastSavedRoundRef.current=stats.rounds;
-      const accuracy=stats.total>0?Math.round((stats.ok/stats.total)*100):0;
-      saveSession({
-        game_id:"baccarat",
-        mode: diff===1?"guidee":"examen",
-        score: accuracy,
-        accuracy,
-        duration_seconds:0,
-        rounds_played:1,
-        rounds_correct:1,
-        errors:[],
-        details:{ difficulty:diff, stats },
-      }).catch(()=>null);
-    }
-  },[stats, diff]);
 
   const dealHand=()=>{
     const s=shoe.length>20?shoe:mkShoe();
@@ -129,7 +92,6 @@ export default function PuntoBancoSimulator(){
     const res=resolve(pc,bc,rest);
     setShoe(rest);setPlayerCards(pc);setBankerCards(bc);
     setResolution(res);setWrong(false);setP3Shown(false);setB3Shown(false);setWinnerWrong(false);
-    // Always start with playerDraw — even naturals, user must answer Reste
     setStep("playerDraw");setPhase("l1");
   };
 
@@ -151,8 +113,8 @@ export default function PuntoBancoSimulator(){
     else{setWinnerWrong(true);setStats(s=>({...s,total:s.total+1}));}
   };
 
-  // ══ LEVEL 2: Calcul Égalité (x8) ══
-  const genL2=()=>(Math.floor(Math.random()*24)+1)*20; // 20-480 multiples of 20
+  // ── LEVEL 2: Calcul Égalité (x8) ──
+  const genL2=()=>(Math.floor(Math.random()*24)+1)*20;
   const startL2=()=>{const n=genL2();setL2Num(n);setL2Input("");setL2Round(1);setL2Errors([]);setL2Done(false);setL2Comp(false);setPhase("l2");setTimeout(()=>l2Ref.current?.focus(),100);};
   const startL2Comp=(t)=>{setL2Comp(true);setL2Timer(t);const n=genL2();setL2Num(n);setL2Input("");setL2Round(1);setL2Errors([]);setL2Done(false);setL2TimeLeft(t);setPhase("l2");setTimeout(()=>l2Ref.current?.focus(),100);};
 
@@ -162,7 +124,7 @@ export default function PuntoBancoSimulator(){
     l2TimerRef.current=setInterval(()=>{
       setL2TimeLeft(t=>{
         if(t<=1){
-          setL2Errors(e=>[...e,{num:l2Num,expected:l2Num*8,given:"⏱️"}]);
+          setL2Errors(e=>[...e,{num:l2Num,expected:l2Num*8,given:"⏱"}]);
           setStats(s=>({...s,total:s.total+1}));
           if(l2Round>=50){setL2Done(true);clearInterval(l2TimerRef.current);return 0;}
           const nn=genL2();setL2Num(nn);setL2Input("");setL2Round(r=>r+1);
@@ -184,7 +146,7 @@ export default function PuntoBancoSimulator(){
         if(l2Round>=50){setL2Done(true);if(l2TimerRef.current)clearInterval(l2TimerRef.current);return;}
         const nn=genL2();setL2Num(nn);setL2Input("");setL2Round(r=>r+1);setL2TimeLeft(l2Timer);
       }else{
-        setL2Input(""); // Free mode: stay, retry
+        setL2Input("");
       }
       setTimeout(()=>l2Ref.current?.focus(),50);
       return;
@@ -197,28 +159,29 @@ export default function PuntoBancoSimulator(){
 
   // ── MENU ──
   if(screen==="menu")return(
-    <div className="cp-sim-shell cp-sim-page">
+    <div style={{minHeight:"100vh",background:"#080808",color:"#F5F0E8",fontFamily:"'DM Sans',sans-serif"}}>
       <div style={{position:"fixed",inset:0,opacity:0.02,pointerEvents:"none",zIndex:9999,backgroundImage:`url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`}}/>
-      <SimulatorHeader badge="Punto Banco" title="Punto Banco" />
-      <div className="cp-sim-menu-shell">
+      <div style={{padding:"12px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid rgba(201,168,76,0.1)",background:"rgba(8,8,8,0.95)"}}>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:900}}>Dealer<span style={{color:"#C9A84C"}}>School</span></div>
+        <div style={{padding:"4px 12px",border:"1px solid rgba(201,168,76,0.2)",borderRadius:50,fontSize:9,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",color:"#C9A84C"}}>Punto Banco</div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"82vh",gap:24,padding:"0 16px"}}>
         <div style={{textAlign:"center"}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#C9A84C",marginBottom:6}}>Simulateur Croupier</div>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#C9A84C",marginBottom:6}}>Dealer School</div>
           <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(1.5rem,3.5vw,2.2rem)",fontWeight:900,lineHeight:1.15,margin:0}}>
             Punto <span style={{color:"#C9A84C",fontStyle:"italic"}}>Banco</span>
           </h1>
         </div>
-        {/* Rules reference */}
-        <div className="cp-sim-info-card" style={{maxWidth:460}}>
+        <div style={{background:"#141414",border:"1px solid rgba(201,168,76,0.08)",borderRadius:6,padding:16,maxWidth:400,width:"100%"}}>
           <ThirdCardTable/>
         </div>
-        <p className="cp-sim-menu-copy">Travaille les regles de tirage et les paiements d'egalite dans un format de revision rapide, relie au reste de la plateforme.</p>
-        <div className="cp-sim-info-card cp-sim-info-card-muted" style={{ maxWidth: 680 }}>
+        <div>
           <div style={{textAlign:"center",fontSize:8,fontWeight:600,letterSpacing:"0.12em",textTransform:"uppercase",color:"#BFB9AD",marginBottom:5}}>Niveau</div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"center"}}>
+          <div style={{display:"flex",gap:6}}>
             {[{d:1,l:"Tirage"},{d:2,l:"Calcul Égalité"}].map(({d,l})=>(
-              <div key={d} onClick={()=>setDiff(d)} style={{padding:"8px 20px",background:diff===d?"rgba(201,168,76,0.1)":"var(--sim-surface)",border:diff===d?"2px solid #C9A84C":"1px solid var(--sim-border)",borderRadius:4,cursor:"pointer",textAlign:"center",flex:"1 1 150px",maxWidth:240}}>
+              <div key={d} onClick={()=>setDiff(d)} style={{padding:"8px 20px",background:diff===d?"rgba(201,168,76,0.1)":"#141414",border:diff===d?"2px solid #C9A84C":"1px solid rgba(255,255,255,0.05)",borderRadius:4,cursor:"pointer",textAlign:"center"}}>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:900,color:diff===d?"#C9A84C":"#BFB9AD"}}>{d}</div>
-                <div style={{fontSize:8,color:"var(--sim-muted)",marginTop:1}}>{l}</div>
+                <div style={{fontSize:8,color:"#BFB9AD",marginTop:1}}>{l}</div>
               </div>
             ))}
           </div>
@@ -232,25 +195,34 @@ export default function PuntoBancoSimulator(){
 
   // ── L2: Calcul Égalité ──
   if(phase==="l2")return(
-    <div className="cp-sim-shell cp-sim-page">
-      <SimulatorHeader badge="Punto Banco · Calcul Egalite" title="Punto Banco" stats={stats.total>0?`${Math.round(stats.ok/stats.total*100)}%`:""} onBackToMenu={()=>{setScreen("menu");setPhase("idle");if(l2TimerRef.current)clearInterval(l2TimerRef.current);}} />
-      <div className="cp-sim-main-narrow" style={{textAlign:"center"}}>
+    <div style={{minHeight:"100vh",background:"#080808",color:"#F5F0E8",fontFamily:"'DM Sans',sans-serif"}}>
+      <div style={{padding:"4px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid rgba(201,168,76,0.08)",background:"rgba(8,8,8,0.95)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:900}}>Dealer<span style={{color:"#C9A84C"}}>School</span></div>
+          <div style={{padding:"2px 8px",border:"1px solid rgba(201,168,76,0.15)",borderRadius:50,fontSize:7,fontWeight:600,color:"#C9A84C"}}>Punto Banco · Calcul Égalité</div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:8,color:"#BFB9AD"}}>{stats.total>0?`${Math.round(stats.ok/stats.total*100)}%`:""}</span>
+          <button onClick={()=>{setScreen("menu");setPhase("idle");if(l2TimerRef.current)clearInterval(l2TimerRef.current);}} style={{background:"none",border:"1px solid rgba(255,255,255,0.06)",color:"#777",padding:"2px 6px",borderRadius:2,fontSize:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>← Menu</button>
+        </div>
+      </div>
+      <div style={{maxWidth:500,margin:"0 auto",padding:"40px 16px",textAlign:"center"}}>
         {!l2Done?(
           <>
-            {l2Comp&&<div style={{fontSize:10,fontWeight:700,color:"#C9A84C",marginBottom:6}}>Compétition — {l2Round}/50 · ⏱️ {l2TimeLeft}s</div>}
-            {!l2Comp&&<div style={{fontSize:10,fontWeight:700,color:"#C9A84C",marginBottom:6}}>Calcule × 8 (paiement égalité)</div>}
+            {l2Comp&&<div style={{fontSize:10,fontWeight:700,color:"#C9A84C",marginBottom:6}}>Compétition · {l2Round}/50 · ⏱ {l2TimeLeft}s</div>}
+            {!l2Comp&&<div style={{fontSize:10,fontWeight:700,color:"#C9A84C",marginBottom:6}}>Calcule à 8 (paiement égalité)</div>}
             <div style={{background:"radial-gradient(ellipse,#1A6B4F,#0F3D1F)",borderRadius:16,padding:"40px 24px",border:"3px solid rgba(201,168,76,0.15)",marginBottom:20}}>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:48,fontWeight:900,color:"#F5F0E8"}}>{l2Num}€</div>
               <div style={{fontSize:11,color:"rgba(201,168,76,0.5)",marginTop:4}}>× 8 = ?</div>
             </div>
-            <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
+            <div style={{display:"flex",gap:6,justifyContent:"center"}}>
               <input ref={l2Ref} type="number" value={l2Input} onChange={e=>setL2Input(e.target.value)} onKeyDown={e=>e.key==="Enter"&&l2Input.trim()&&submitL2()} placeholder="Résultat" style={{width:160,padding:"10px 14px",background:"#0a0a0a",border:"1px solid rgba(201,168,76,0.2)",borderRadius:4,color:"#F5F0E8",fontSize:20,fontWeight:700,fontFamily:"'DM Sans',sans-serif",outline:"none",textAlign:"center"}} autoFocus/>
               <button onClick={()=>l2Input.trim()&&submitL2()} disabled={!l2Input.trim()} style={{padding:"10px 24px",background:l2Input.trim()?"#C9A84C":"#333",color:"#0A0A0A",border:"none",borderRadius:4,fontSize:12,fontWeight:700,cursor:l2Input.trim()?"pointer":"default",fontFamily:"'DM Sans',sans-serif"}}>OK</button>
             </div>
             {!l2Comp&&(
               <div style={{marginTop:24,borderTop:"1px solid rgba(201,168,76,0.08)",paddingTop:16}}>
                 <div style={{fontSize:9,fontWeight:700,color:"#BFB9AD",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>Mode Compétition</div>
-                <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
+                <div style={{display:"flex",gap:6,justifyContent:"center"}}>
                   {[5,7,10].map(t=>(<button key={t} onClick={()=>startL2Comp(t)} style={{padding:"8px 18px",background:"rgba(201,168,76,0.06)",border:"1px solid rgba(201,168,76,0.15)",borderRadius:3,color:"#C9A84C",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>{t}s · 50 rounds</button>))}
                 </div>
               </div>
@@ -262,7 +234,7 @@ export default function PuntoBancoSimulator(){
             <div style={{fontSize:13,color:"#BFB9AD",marginBottom:16}}>{50-l2Errors.length}/50 corrects · {l2Errors.length} erreurs</div>
             {l2Errors.length>0&&(
               <div style={{background:"#141414",border:"1px solid rgba(201,168,76,0.08)",borderRadius:6,padding:12,maxHeight:300,overflowY:"auto",textAlign:"left"}}>
-                {l2Errors.map((e,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid var(--sim-border)",fontSize:11,color:"var(--sim-muted)"}}><span>{e.num}€ × 8</span><span style={{color:"#C62828"}}>{e.given} <span style={{color:"#888"}}>→</span> <span style={{color:"#2E7D46"}}>{e.expected}€</span></span></div>))}
+                {l2Errors.map((e,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.03)",fontSize:11,color:"#BFB9AD"}}><span>{e.num}€ × 8</span><span style={{color:"#C62828"}}>{e.given} <span style={{color:"#888"}}>→</span> <span style={{color:"#2E7D46"}}>{e.expected}€</span></span></div>))}
               </div>
             )}
             <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:16}}>
@@ -277,70 +249,68 @@ export default function PuntoBancoSimulator(){
 
   // ── GAME ──
   const res=resolution;
-  const pScore=hs(playerCards);
-  const bScore=hs(bankerCards);
   const isDone=step==="done";
-  const isNat=res&&res.nat;
 
   return(
-    <div className="cp-sim-shell cp-sim-page">
-      <SimulatorHeader badge="Punto Banco · Tirage" title="Punto Banco" stats={`R${stats.rounds+1}${stats.total>0?` · ${Math.round(stats.ok/stats.total*100)}%`:""}`} onBackToMenu={()=>{setScreen("menu");setPhase("idle");}} />
+    <div style={{minHeight:"100vh",background:"#080808",color:"#F5F0E8",fontFamily:"'DM Sans',sans-serif"}}>
+      <div style={{padding:"4px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid rgba(201,168,76,0.08)",background:"rgba(8,8,8,0.95)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:900}}>Dealer<span style={{color:"#C9A84C"}}>School</span></div>
+          <div style={{padding:"2px 8px",border:"1px solid rgba(201,168,76,0.15)",borderRadius:50,fontSize:7,fontWeight:600,color:"#C9A84C"}}>Punto Banco · Tirage</div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:8,color:"#BFB9AD"}}>R{stats.rounds+1}{stats.total>0?` · ${Math.round(stats.ok/stats.total*100)}%`:""}</span>
+          <button onClick={()=>{setScreen("menu");setPhase("idle");}} style={{background:"none",border:"1px solid rgba(255,255,255,0.06)",color:"#777",padding:"2px 6px",borderRadius:2,fontSize:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>← Menu</button>
+        </div>
+      </div>
 
-      <div className="cp-sim-main">
-        {/* TABLE */}
-        <div className="cp-sim-stage cp-sim-stage-rect" style={{padding:isMobile?"18px 14px":"32px 36px",minHeight:isDesktopWide?420:0}}>
+      <div style={{maxWidth:700,margin:"0 auto",padding:"24px 16px"}}>
+        <div style={{background:"radial-gradient(ellipse 120% 80% at 50% 50%,#1A6B4F,#15553A 40%,#0F3D1F 80%,#0B3320)",borderRadius:16,padding:"28px 32px",border:"4px solid rgba(201,168,76,0.18)",boxShadow:"inset 0 0 100px rgba(0,0,0,0.2),0 16px 50px rgba(0,0,0,0.45)",position:"relative"}}>
           <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",fontSize:14,fontWeight:700,letterSpacing:"0.3em",textTransform:"uppercase",color:"rgba(201,168,76,0.03)",fontFamily:"'Playfair Display',serif",whiteSpace:"nowrap",pointerEvents:"none"}}>PUNTO BANCO</div>
 
-          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:isMobile?18:32}}>
-            {/* BANCO side (left) */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:32}}>
             <div style={{padding:16,borderRadius:12,border:"2px solid transparent",background:"transparent",transition:"all 0.3s"}}>
-              <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#EF5350",marginBottom:10,textAlign:"center"}}>
-                Banco
-              </div>
-              <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
-                {bankerCards.map(c=><Card key={c.id} card={c} size={cardSize}/>)}
+              <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#EF5350",marginBottom:10,textAlign:"center"}}>Banco</div>
+              <div style={{display:"flex",gap:6,justifyContent:"center"}}>
+                {bankerCards.map(c=><Card key={c.id} card={c} size="md"/>)}
               </div>
             </div>
 
-            {/* PUNTO side (right) */}
             <div style={{padding:16,borderRadius:12,border:"2px solid transparent",background:"transparent",transition:"all 0.3s"}}>
-              <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#4FC3F7",marginBottom:10,textAlign:"center"}}>
-                Punto
-              </div>
-              <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
-                {playerCards.map(c=><Card key={c.id} card={c} size={cardSize}/>)}
+              <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#4FC3F7",marginBottom:10,textAlign:"center"}}>Punto</div>
+              <div style={{display:"flex",gap:6,justifyContent:"center"}}>
+                {playerCards.map(c=><Card key={c.id} card={c} size="md"/>)}
               </div>
             </div>
           </div>
         </div>
 
-        {/* CONTROLS */}
         <div style={{marginTop:12}}>
           {step==="playerDraw"&&(
-            <div style={{padding:14,background:"var(--sim-surface)",border:"1px solid var(--sim-border)",borderRadius:6,textAlign:"center"}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#4FC3F7",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>Punto — Carte ou Reste ?</div>
+            <div style={{padding:14,background:"#141414",border:"1px solid rgba(201,168,76,0.1)",borderRadius:6,textAlign:"center"}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#4FC3F7",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>Punto → Carte ou Reste ?</div>
               {wrong&&<div style={{fontSize:10,color:"#C62828",fontWeight:700,marginBottom:6}}>✗</div>}
-              <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
+              <div style={{display:"flex",gap:10,justifyContent:"center"}}>
                 <button onClick={()=>answerPlayer("carte")} style={{padding:"10px 32px",background:"#C9A84C",color:"#0A0A0A",border:"none",borderRadius:4,fontSize:12,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Carte</button>
                 <button onClick={()=>answerPlayer("reste")} style={{padding:"10px 32px",background:"transparent",color:"#F5F0E8",border:"2px solid rgba(201,168,76,0.3)",borderRadius:4,fontSize:12,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Reste</button>
               </div>
             </div>
           )}
           {step==="bankerDraw"&&(
-            <div style={{padding:14,background:"var(--sim-surface)",border:"1px solid var(--sim-border)",borderRadius:6,textAlign:"center"}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#EF5350",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>Banco — Carte ou Reste ?</div>
+            <div style={{padding:14,background:"#141414",border:"1px solid rgba(201,168,76,0.1)",borderRadius:6,textAlign:"center"}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#EF5350",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>Banco → Carte ou Reste ?</div>
               {wrong&&<div style={{fontSize:10,color:"#C62828",fontWeight:700,marginBottom:6}}>✗</div>}
-              <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
+              <div style={{display:"flex",gap:10,justifyContent:"center"}}>
                 <button onClick={()=>answerBanker("carte")} style={{padding:"10px 32px",background:"#C9A84C",color:"#0A0A0A",border:"none",borderRadius:4,fontSize:12,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Carte</button>
                 <button onClick={()=>answerBanker("reste")} style={{padding:"10px 32px",background:"transparent",color:"#F5F0E8",border:"2px solid rgba(201,168,76,0.3)",borderRadius:4,fontSize:12,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Reste</button>
               </div>
             </div>
           )}
           {step==="winner"&&(
-            <div style={{padding:14,background:"var(--sim-surface)",border:"1px solid var(--sim-border)",borderRadius:6,textAlign:"center"}}>
+            <div style={{padding:14,background:"#141414",border:"1px solid rgba(201,168,76,0.1)",borderRadius:6,textAlign:"center"}}>
               <div style={{fontSize:10,fontWeight:700,color:"#C9A84C",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>Qui gagne ?</div>
               {winnerWrong&&<div style={{fontSize:10,color:"#C62828",fontWeight:700,marginBottom:6}}>✗</div>}
-              <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
+              <div style={{display:"flex",gap:10,justifyContent:"center"}}>
                 <button onClick={()=>answerWinner("player")} style={{padding:"10px 28px",background:"rgba(79,195,247,0.1)",border:"1px solid rgba(79,195,247,0.3)",borderRadius:4,fontSize:12,fontWeight:700,color:"#4FC3F7",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Punto</button>
                 <button onClick={()=>answerWinner("tie")} style={{padding:"10px 28px",background:"rgba(201,168,76,0.06)",border:"1px solid rgba(201,168,76,0.2)",borderRadius:4,fontSize:12,fontWeight:700,color:"#C9A84C",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Égalité</button>
                 <button onClick={()=>answerWinner("banker")} style={{padding:"10px 28px",background:"rgba(239,83,80,0.1)",border:"1px solid rgba(239,83,80,0.3)",borderRadius:4,fontSize:12,fontWeight:700,color:"#EF5350",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Banco</button>
@@ -352,18 +322,16 @@ export default function PuntoBancoSimulator(){
           )}
         </div>
 
-        {/* Rules reference (collapsible) */}
         <details style={{marginTop:12}}>
           <summary style={{fontSize:9,fontWeight:700,color:"#C9A84C",letterSpacing:"0.1em",textTransform:"uppercase",cursor:"pointer"}}>Règles de tirage</summary>
-          <div style={{background:"var(--sim-surface)",border:"1px solid var(--sim-border)",borderRadius:4,padding:12,marginTop:6}}>
+          <div style={{background:"#141414",border:"1px solid rgba(201,168,76,0.06)",borderRadius:4,padding:12,marginTop:6}}>
             <ThirdCardTable/>
           </div>
         </details>
 
-        {/* Stats */}
-        <div className="cp-sim-stats-grid" style={{marginTop:10}}>
+        <div style={{marginTop:10,display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:5}}>
           {[{n:stats.rounds,l:"Coups"},{n:stats.total>0?`${Math.round(stats.ok/stats.total*100)}%`:"—",l:"Précision"},{n:stats.ok,l:"Correct"}].map((s,i)=>(
-            <div key={i} style={{background:"var(--sim-surface)",border:"1px solid var(--sim-border)",borderRadius:3,padding:"5px",textAlign:"center"}}>
+            <div key={i} style={{background:"#141414",border:"1px solid rgba(201,168,76,0.05)",borderRadius:3,padding:"5px",textAlign:"center"}}>
               <div style={{fontFamily:typeof s.n==="number"?"'Playfair Display',serif":"'DM Sans',sans-serif",fontSize:typeof s.n==="number"?15:9,fontWeight:typeof s.n==="number"?900:700,color:"#C9A84C"}}>{s.n}</div>
               <div style={{fontSize:6,color:"#BFB9AD",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:1}}>{s.l}</div>
             </div>

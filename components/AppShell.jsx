@@ -15,6 +15,7 @@ export default function AppShell({
   showSecondaryNav,
   secondaryNavItems,
   secondaryNavTitle,
+  heroContent = null,
 }) {
   const pathname = usePathname();
   const shouldShowSecondaryNav = typeof showSecondaryNav === "boolean" ? showSecondaryNav : pathname !== "/";
@@ -23,6 +24,7 @@ export default function AppShell({
     <div className={`cp-shell cp-app-shell ${pageClassName}`.trim()}>
       <TopBar badge={badge} />
       {shouldShowSecondaryNav ? <SecondaryNav items={secondaryNavItems} title={secondaryNavTitle} /> : null}
+      {heroContent}
       <PageContainer style={containerStyle} padded={padded} density={density}>
         {children}
       </PageContainer>

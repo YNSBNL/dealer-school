@@ -5,7 +5,7 @@ import { ThemeProvider } from "@/lib/theme-context";
 const themeInitScript = `
 (() => {
   try {
-    const saved = localStorage.getItem('croupierpro-theme');
+    const saved = localStorage.getItem('dealer-school-theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const theme = saved === 'light' || saved === 'dark' ? saved : null;
     const resolved = theme || (prefersDark ? 'dark' : 'light');
@@ -20,8 +20,8 @@ const themeInitScript = `
 `;
 
 export const metadata = {
-  title: "CroupierPro | Plateforme de formation croupier",
-  description: "Formation croupier en ligne avec simulateurs interactifs, suivi de progression, revision guidee et parcours de certification.",
+  title: "Dealer School | Formation dealer en ligne",
+  description: "Formation dealer en ligne avec simulateurs interactifs, suivi de progression, revision guidee et parcours de certification.",
 };
 
 export default function RootLayout({ children }) {

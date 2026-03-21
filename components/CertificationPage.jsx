@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import AssetPanel from "@/components/AssetPanel";
 import { fetchCertifications, fetchProgress, fetchSessions, fetchSkills } from "@/lib/api";
 import { AVAILABLE_GAMES, getGameById } from "@/lib/game-registry";
 import { buildCertificationSnapshot } from "@/lib/member-analytics";
@@ -137,16 +138,29 @@ export default function CertificationPage() {
 
           <div className="cp-product-hero-aside">
             {level ? (
-              <ProgressCard
-                title={level.name}
-                subtitle={level.tagline}
-                progress={level.progress}
-                status={level.achieved ? "Valide" : "En cours"}
-                value={level.achieved ? "Acquis" : `${level.progress}%`}
-                meta={formattedDate ? `Valide le ${formattedDate}` : "Palier actuellement suivi"}
-              >
-                <div className="cp-muted">{level.description}</div>
-              </ProgressCard>
+              <>
+                <ProgressCard
+                  title={level.name}
+                  subtitle={level.tagline}
+                  progress={level.progress}
+                  status={level.achieved ? "Valide" : "En cours"}
+                  value={level.achieved ? "Acquis" : `${level.progress}%`}
+                  meta={formattedDate ? `Valide le ${formattedDate}` : "Palier actuellement suivi"}
+                >
+                  <div className="cp-muted">{level.description}</div>
+                </ProgressCard>
+
+                <AssetPanel
+                  src="/visuals/certification-atelier.svg"
+                  alt="Visuel premium du parcours de certification Dealer School."
+                  eyebrow="Insignes"
+                  title="Le parcours se lit comme un atelier de validation"
+                  description="Badges, niveaux et progression sont mis en scene avec un visuel sobre, inspire des standards premium de table."
+                  badges={["Bronze", "Silver", "Gold", "Platinum", "Elite"]}
+                  ratio="certification"
+                  className="cp-cert-visual-panel"
+                />
+              </>
             ) : (
               <Card padded="md">
                 <LoadingState title="Preparation du parcours..." />
@@ -181,6 +195,20 @@ export default function CertificationPage() {
               title="Lecture rapide des paliers"
               description="Chaque niveau correspond a un degre d'autonomie plus exigeant sur la procedure, la cadence et la qualite d'execution."
             />
+
+            <div className="cp-cert-badge-strip">
+              {levels.map((item) => (
+                <div key={item.id} className="cp-cert-badge-card" style={{ borderColor: `${item.color}66` }}>
+                  <div className="cp-cert-badge-mark" style={{ color: item.color, borderColor: `${item.color}66` }}>
+                    {item.name.slice(0, 1)}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800 }}>{item.name}</div>
+                    <div className="cp-muted" style={{ fontSize: 12 }}>{item.tagline}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
 
             <div className="cp-cert-level-grid">
               {levels.map((item) => (

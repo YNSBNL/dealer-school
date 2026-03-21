@@ -4,7 +4,6 @@ import { memo, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { AVAILABLE_GAMES } from "@/lib/game-registry";
 import { useTheme } from "@/lib/theme-context";
 
 function ThemeIcon({ theme, isDarkTheme }) {
@@ -39,7 +38,7 @@ function ThemeIcon({ theme, isDarkTheme }) {
 }
 
 function TopBar({ badge = null }) {
-  const { user, profile, loading, isDemoMode } = useAuth();
+  const { user, profile, loading } = useAuth();
   const { resolvedTheme, theme, toggleTheme } = useTheme();
   const pathname = usePathname();
   const isDarkTheme = resolvedTheme === "dark";
@@ -69,15 +68,13 @@ function TopBar({ badge = null }) {
     [pathname, user]
   );
 
-  const simulatorStatus = `${AVAILABLE_GAMES.length} simulateurs complets, reserves a l'espace membre.`;
-
   return (
     <header className="cp-navbar">
       <div className="cp-topbar-shell">
         <div className="cp-topbar-main">
           <div className="cp-topbar-brand">
             <Link href="/" className="cp-logo">
-              Croupier<span>Pro</span>
+              Dealer<span>School</span>
             </Link>
             <div className="cp-topbar-product">
               <div className="cp-topbar-product-label">{user ? "Espace membre" : "Vitrine publique"}</div>
@@ -90,12 +87,6 @@ function TopBar({ badge = null }) {
           </div>
 
           <div className="cp-topbar-actions">
-            {badge ? <div className="cp-badge">{badge}</div> : null}
-            {isDemoMode ? (
-              <div className="cp-badge">
-                <span className="cp-badge-dot" /> Configuration locale
-              </div>
-            ) : null}
             <button
               type="button"
               className="cp-button-ghost cp-theme-toggle"
@@ -129,30 +120,18 @@ function TopBar({ badge = null }) {
           </div>
         </div>
 
-        <div className="cp-topbar-navrow">
-          <nav className="cp-topbar-nav" aria-label="Navigation principale">
-            {primaryNav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`cp-topbar-link${item.active ? " cp-topbar-link-active" : ""}`}
-                aria-current={item.active ? "page" : undefined}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          {!loading && user ? (
-            <div className="cp-topbar-status">
-              Espace membre actif. Les sessions, la progression et le parcours sont relies au meme compte.
-            </div>
-          ) : (
-            <div className="cp-topbar-status">
-              {simulatorStatus} Le catalogue reste public pour la decouverte.
-            </div>
-          )}
-        </div>
+        <nav className="cp-topbar-navrow cp-topbar-nav" aria-label="Navigation principale">
+          {primaryNav.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`cp-topbar-link${item.active ? " cp-topbar-link-active" : ""}`}
+              aria-current={item.active ? "page" : undefined}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
       </div>
     </header>
   );

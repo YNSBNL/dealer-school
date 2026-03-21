@@ -1,0 +1,55 @@
+<svg width="1440" height="960" viewBox="0 0 1440 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="960" rx="48" fill="#091018"/>
+  <rect x="24" y="24" width="1392" height="912" rx="40" fill="url(#bg)"/>
+  <circle cx="1146" cy="186" r="220" fill="url(#goldGlow)" opacity=".5"/>
+  <circle cx="286" cy="764" r="260" fill="url(#greenGlow)" opacity=".32"/>
+  <path d="M114 774C268 640 446 582 650 600C840 618 1008 554 1190 398" stroke="#E1CC8A" stroke-opacity=".18" stroke-width="2"/>
+  <rect x="118" y="130" width="724" height="444" rx="30" fill="#101A24" stroke="#3A2A11"/>
+  <rect x="152" y="166" width="190" height="124" rx="20" fill="#131F2C"/>
+  <rect x="368" y="166" width="438" height="124" rx="20" fill="#131F2C"/>
+  <rect x="152" y="314" width="654" height="224" rx="22" fill="#0D1520"/>
+  <path d="M196 478L270 412L360 438L442 346L524 362L624 262L760 294" stroke="#E2C56E" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="270" cy="412" r="10" fill="#E2C56E"/>
+  <circle cx="442" cy="346" r="10" fill="#E2C56E"/>
+  <circle cx="624" cy="262" r="10" fill="#E2C56E"/>
+  <rect x="892" y="154" width="428" height="262" rx="30" fill="#101923" stroke="#3A2A11"/>
+  <rect x="926" y="188" width="184" height="194" rx="24" fill="#0C4C38" stroke="#C9A84C"/>
+  <rect x="1118" y="188" width="168" height="92" rx="18" fill="#131F2C"/>
+  <rect x="1118" y="290" width="168" height="92" rx="18" fill="#131F2C"/>
+  <circle cx="1018" cy="286" r="56" fill="none" stroke="#E2C56E" stroke-width="12"/>
+  <circle cx="1018" cy="286" r="10" fill="#F7E6B0"/>
+  <path d="M1018 230V342M962 286H1074" stroke="#E2C56E" stroke-width="6" stroke-linecap="round"/>
+  <rect x="846" y="520" width="486" height="248" rx="30" fill="#101923" stroke="#3A2A11"/>
+  <path d="M896 570H1184" stroke="#2D3A4A" stroke-width="2"/>
+  <rect x="896" y="608" width="126" height="118" rx="18" fill="#131F2C"/>
+  <rect x="1038" y="608" width="126" height="118" rx="18" fill="#131F2C"/>
+  <rect x="1180" y="608" width="102" height="118" rx="18" fill="#0C4C38" stroke="#C9A84C"/>
+  <path d="M948 658C964 620 1000 620 1016 658C1000 696 964 696 948 658Z" fill="#E2C56E"/>
+  <path d="M1088 698C1106 656 1138 656 1156 698" stroke="#E2C56E" stroke-width="10" stroke-linecap="round"/>
+  <path d="M1206 656L1231 631L1256 656L1231 681L1206 656Z" fill="#E2C56E"/>
+  <rect x="192" y="640" width="560" height="170" rx="26" fill="#101923" stroke="#3A2A11"/>
+  <rect x="230" y="678" width="156" height="94" rx="18" fill="#131F2C"/>
+  <rect x="406" y="678" width="156" height="94" rx="18" fill="#131F2C"/>
+  <rect x="582" y="678" width="132" height="94" rx="18" fill="#0C4C38" stroke="#C9A84C"/>
+  <text x="164" y="102" fill="#E7CF87" font-size="22" font-family="DM Sans, Arial, sans-serif" letter-spacing="4">DEALER SCHOOL SUITE</text>
+  <text x="154" y="224" fill="#F7F1E3" font-size="40" font-family="DM Sans, Arial, sans-serif" font-weight="700">Suivi apprenant</text>
+  <text x="154" y="260" fill="#9FA8B6" font-size="22" font-family="DM Sans, Arial, sans-serif">Analytics, table flow, certification et revision</text>
+  <text x="928" y="142" fill="#E7CF87" font-size="22" font-family="DM Sans, Arial, sans-serif" letter-spacing="4">TABLE STUDIO</text>
+  <text x="880" y="510" fill="#E7CF87" font-size="22" font-family="DM Sans, Arial, sans-serif" letter-spacing="4">CERTIFICATION LAB</text>
+  <text x="224" y="630" fill="#E7CF87" font-size="22" font-family="DM Sans, Arial, sans-serif" letter-spacing="4">PRIVATE PLATFORM</text>
+  <defs>
+    <linearGradient id="bg" x1="160" y1="64" x2="1260" y2="920" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D1721"/>
+      <stop offset="0.52" stop-color="#10131C"/>
+      <stop offset="1" stop-color="#0C1117"/>
+    </linearGradient>
+    <radialGradient id="goldGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1146 186) rotate(90) scale(220)">
+      <stop stop-color="#C9A84C"/>
+      <stop offset="1" stop-color="#C9A84C" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="greenGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(286 764) rotate(90) scale(260)">
+      <stop stop-color="#2E7D46"/>
+      <stop offset="1" stop-color="#2E7D46" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+</svg>

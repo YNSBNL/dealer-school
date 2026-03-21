@@ -6,7 +6,8 @@ export type GameId =
   | "three-card-poker"
   | "caribbean-stud"
   | "casino-holdem"
-  | "let-it-ride";
+  | "let-it-ride"
+  | "plo-omaha";
 
 export type GameFamily = "classiques" | "poker-casino";
 export type GameAvailability = "available" | "beta" | "coming-soon";
@@ -18,6 +19,7 @@ export interface GameRegistryItem {
   shortName: string;
   family: GameFamily;
   icon: string;
+  poster: string;
   difficulty: number;
   availability: GameAvailability;
   route: string;
@@ -37,6 +39,7 @@ export const GAME_REGISTRY: GameRegistryItem[] = [
     shortName: "Roulette",
     family: "classiques",
     icon: "RT",
+    poster: "/visuals/games/roulette.svg",
     difficulty: 2,
     availability: "available",
     route: "/simulateur/roulette",
@@ -54,6 +57,7 @@ export const GAME_REGISTRY: GameRegistryItem[] = [
     shortName: "Blackjack",
     family: "classiques",
     icon: "BJ",
+    poster: "/visuals/games/blackjack.svg",
     difficulty: 2,
     availability: "available",
     route: "/simulateur/blackjack",
@@ -67,14 +71,15 @@ export const GAME_REGISTRY: GameRegistryItem[] = [
   {
     id: "baccarat",
     slug: "baccarat",
-    name: "Baccarat",
-    shortName: "Baccarat",
+    name: "Punto Banco",
+    shortName: "Punto Banco",
     family: "classiques",
-    icon: "BA",
+    icon: "PB",
+    poster: "/visuals/games/baccarat.svg",
     difficulty: 3,
     availability: "available",
     route: "/simulateur/baccarat",
-    description: "Naturels, troisieme carte, rythme de table et resolution.",
+    description: "Naturels, regle de la troisieme carte, rythme de table et resolution Banco / Punto.",
     tagline: "Precision et cadence",
     visibleInCatalogue: true,
     visibleInDashboard: true,
@@ -88,6 +93,7 @@ export const GAME_REGISTRY: GameRegistryItem[] = [
     shortName: "Ultimate Texas",
     family: "poker-casino",
     icon: "UTH",
+    poster: "/visuals/games/ultimate-texas.svg",
     difficulty: 3,
     availability: "available",
     route: "/simulateur/ultimate-texas",
@@ -105,6 +111,7 @@ export const GAME_REGISTRY: GameRegistryItem[] = [
     shortName: "Three Card Poker",
     family: "poker-casino",
     icon: "3CP",
+    poster: "/visuals/games/three-card-poker.svg",
     difficulty: 2,
     availability: "available",
     route: "/simulateur/three-card-poker",
@@ -122,6 +129,7 @@ export const GAME_REGISTRY: GameRegistryItem[] = [
     shortName: "Caribbean Stud",
     family: "poker-casino",
     icon: "CS",
+    poster: "/visuals/games/caribbean-stud.svg",
     difficulty: 2,
     availability: "available",
     route: "/simulateur/caribbean-stud",
@@ -135,14 +143,15 @@ export const GAME_REGISTRY: GameRegistryItem[] = [
   {
     id: "casino-holdem",
     slug: "casino-holdem",
-    name: "Casino Hold'em",
-    shortName: "Casino Hold'em",
+    name: "Texas Hold'em",
+    shortName: "Texas Hold'em",
     family: "poker-casino",
-    icon: "CH",
+    icon: "TH",
+    poster: "/visuals/games/casino-holdem.svg",
     difficulty: 3,
     availability: "available",
     route: "/simulateur/casino-holdem",
-    description: "Ante/call, flop visible et qualification pair of 4s+.",
+    description: "Ante/call, flop communautaire et qualification dealer pair de 4 ou mieux.",
     tagline: "Hold'em contre le dealer",
     visibleInCatalogue: true,
     visibleInDashboard: true,
@@ -156,11 +165,30 @@ export const GAME_REGISTRY: GameRegistryItem[] = [
     shortName: "Let It Ride",
     family: "poker-casino",
     icon: "LIR",
+    poster: "/visuals/games/let-it-ride.svg",
     difficulty: 2,
     availability: "available",
     route: "/simulateur/let-it-ride",
     description: "Trois mises initiales, retraits progressifs et paytable finale.",
     tagline: "Lecture de main et gestion des mises",
+    visibleInCatalogue: true,
+    visibleInDashboard: true,
+    visibleInLanding: true,
+    visibleInCertification: true,
+  },
+  {
+    id: "plo-omaha",
+    slug: "plo-omaha",
+    name: "Pot Limit Omaha",
+    shortName: "PLO",
+    family: "poker-casino",
+    icon: "PLO",
+    poster: "/visuals/games/plo-omaha.svg",
+    difficulty: 3,
+    availability: "available",
+    route: "/simulateur/plo-omaha",
+    description: "Lecture de board PLO, calcul du pot limit et gestion des side pots.",
+    tagline: "4 cartes, la regie du pot",
     visibleInCatalogue: true,
     visibleInDashboard: true,
     visibleInLanding: true,

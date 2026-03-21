@@ -24,7 +24,7 @@ const GAME_TOPICS = [
     icon: game.icon,
     topics: TOPIC_MAP[game.id] || [game.tagline],
   })),
-  { id: "general", name: "Metier croupier", icon: "🎓", topics: ["Posture", "Rythme", "Gestion d'un litige"] },
+  { id: "general", name: "Métier croupier", icon: "DS", topics: ["Posture en table", "Rythme de jeu", "Gestion d'un litige"] },
 ];
 
 const QUICK_PROMPTS = [

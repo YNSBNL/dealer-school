@@ -2,313 +2,294 @@
 
 import AppShell from "@/components/AppShell";
 import { useAuth } from "@/lib/auth-context";
-import { AVAILABLE_GAMES, LANDING_GAMES } from "@/lib/game-registry";
-import { buildLoginHref, buildProtectedHref, buildRegisterHref } from "@/lib/platform-access";
-import { Badge, Button, Card, ProgressCard, SectionHeader, StatCard } from "@/components/ui";
+import { buildProtectedHref, buildRegisterHref } from "@/lib/platform-access";
+import { Badge, Button, Card, SectionHeader } from "@/components/ui";
 
-const steps = [
+// ── Vrais modules disponibles ────────────────────────────────────────────────
+const GAME_FAMILIES = [
   {
-    title: "Prendre en main les fondamentaux",
-    copy: "Le candidat travaille les regles, les annonces, les paiements et la logique de procedure sur des tables interactives.",
+    family: "Classiques casino",
+    games: [
+      {
+        id: "roulette",
+        abbrev: "RT",
+        name: "Roulette Anglaise",
+        desc: "Annonces, calcul des paiements et résolution complète d'un coup de roulette. Procédure pleine table.",
+        route: "/simulateur/roulette",
+      },
+      {
+        id: "blackjack",
+        abbrev: "BJ",
+        name: "Blackjack",
+        desc: "Distribution, décisions joueurs (hit, stand, double, split), règles dealer et résolution des mains.",
+        route: "/simulateur/blackjack",
+      },
+      {
+        id: "punto-banco",
+        abbrev: "PB",
+        name: "Punto Banco",
+        desc: "Naturels, règle de la troisième carte, rythme de table et résolution Banco / Punto.",
+        route: "/simulateur/baccarat",
+      },
+    ],
   },
   {
-    title: "Mesurer la progression",
-    copy: "Chaque session alimente un suivi clair: volume de pratique, precision, regularite et progression par jeu.",
-  },
-  {
-    title: "Monter en exigence",
-    copy: "Le parcours enchaine les niveaux, les jeux et les situations jusqu'a un niveau de tenue de table plus stable.",
+    family: "Poker casino",
+    games: [
+      {
+        id: "ultimate-texas",
+        abbrev: "UTH",
+        name: "Ultimate Texas Hold'em",
+        desc: "Blind, ante, trips, fenêtres de mise et showdown. Le poker casino à procédure la plus complète.",
+        route: "/simulateur/ultimate-texas",
+      },
+      {
+        id: "three-card-poker",
+        abbrev: "3CP",
+        name: "Three Card Poker",
+        desc: "Ante/play, pair plus et qualification du dealer. Procédure simple, résolution rigoureuse.",
+        route: "/simulateur/three-card-poker",
+      },
+      {
+        id: "caribbean-stud",
+        abbrev: "CS",
+        name: "Caribbean Stud",
+        desc: "Qualification du dealer, raise et paiements selon paytable. Cinq cartes contre la maison.",
+        route: "/simulateur/caribbean-stud",
+      },
+      {
+        id: "texas-holdem",
+        abbrev: "TH",
+        name: "Texas Hold'em",
+        desc: "Ante/call, flop communautaire, qualification dealer et paiements selon le paytable.",
+        route: "/simulateur/casino-holdem",
+      },
+      {
+        id: "let-it-ride",
+        abbrev: "LIR",
+        name: "Let It Ride",
+        desc: "Trois mises initiales, retraits progressifs et paytable finale. Lecture de main et gestion des mises.",
+        route: "/simulateur/let-it-ride",
+      },
+      {
+        id: "pot-limit-omaha",
+        abbrev: "PLO",
+        name: "Pot Limit Omaha",
+        desc: "Quatre cartes en main, mises limitées au pot, lecture de combinaisons et résolution showdown.",
+        route: "/simulateur/plo-omaha",
+      },
+    ],
   },
 ];
 
-const learningModes = [
+// Liste à plat pour le hero preview
+const ALL_GAMES = GAME_FAMILIES.flatMap((f) => f.games);
+
+const levels = [
+  { num: 1, label: "Bases", desc: "Règles et terminologie" },
+  { num: 2, label: "Procédures", desc: "Annonces et gestion" },
+  { num: 3, label: "Autonomie", desc: "Tables classiques" },
+  { num: 4, label: "Maîtrise", desc: "Situations complexes" },
+  { num: 5, label: "Expert", desc: "Tenue de table stable" },
+];
+
+const certTiers = [
   {
-    title: "Simulation guidee",
-    subtitle: "Apprendre le bon enchainement",
-    progress: 72,
-    status: "Demarrage",
-    value: "Procedure",
-    meta: "Annonces, placement, paiements",
-    details: [
-      "Prise en main des mecanismes de table",
-      "Rythme progressif pour memoriser les standards",
-    ],
+    key: "bronze",
+    label: "Bronze",
+    title: "Socle procédural",
+    desc: "Règles maîtrisées, annonces correctes, gestion de table accompagnée.",
   },
   {
-    title: "Entrainement rythme",
-    subtitle: "Gagner en regularite",
-    progress: 84,
-    status: "Consolidation",
-    value: "Execution",
-    meta: "Cadence, fiabilite, repetitions",
-    details: [
-      "Repetition des scenarii les plus frequents",
-      "Lecture immediate du score et de la precision",
-    ],
+    key: "silver",
+    label: "Silver",
+    title: "Autonomie encadrée",
+    desc: "Tenue autonome sur les jeux classiques, situations courantes gérées.",
   },
   {
-    title: "Revision et certification",
-    subtitle: "Verifier ce qui tient vraiment",
-    progress: 58,
-    status: "Validation",
-    value: "Evaluation",
-    meta: "Paliers, criteres, suivi",
-    details: [
-      "Debrief, auto-evaluation et preparation du niveau suivant",
-      "Vision plus objective du niveau atteint par jeu",
-    ],
+    key: "gold",
+    label: "Gold",
+    title: "Niveau opérationnel",
+    desc: "Tenue de table stable et mesurable. Niveau visé pour une prise de poste.",
+    target: true,
   },
 ];
 
-const audienceBlocks = [
-  {
-    title: "Pour les candidats",
-    points: [
-      "S'entrainer a son rythme, sans attendre une table disponible.",
-      "Comprendre les standards avant l'entretien ou la prise de poste.",
-      "Visualiser ses points forts et les zones a retravailler.",
-    ],
-    cta: { href: "/auth/register", label: "Creer mon espace" },
-  },
-  {
-    title: "Pour les casinos et centres de formation",
-    points: [
-      "Structurer une base commune de revision et de preparation.",
-      "Suivre une progression plus lisible sur les jeux prioritaires.",
-      "Completer la formation terrain par un environnement de repetition.",
-    ],
-    cta: { href: "/catalogue", label: "Voir les jeux couverts" },
-  },
+const memberFeatures = [
+  "Accès complet aux 9 simulateurs de jeux",
+  "Suivi de progression session par session",
+  "Parcours de certification Bronze → Gold",
+  "Coach IA pour réviser les procédures",
+  "Statistiques détaillées par jeu et par niveau",
 ];
 
+// ── Hero ──────────────────────────────────────────────────────────────────────
+function HeroSection({ user }) {
+  return (
+    <div className="cp-hero-shell">
+      <div className="cp-hero-inner">
+
+        <div className="cp-hero-text">
+          <Badge>
+            <span className="cp-badge-dot" /> Plateforme de formation · Procédures de table
+          </Badge>
+
+          <h1 className="cp-hero-title">
+            Former un dealer<br />
+            <span className="cp-gold">prêt pour le terrain.</span>
+          </h1>
+
+          <p className="cp-hero-lead">
+            Simulateurs de procédures réelles, suivi de progression et certification structurée.
+            Un environnement d'entraînement conçu pour les standards du métier.
+          </p>
+
+          <div className="cp-hero-cta">
+            <Button href={user ? "/dashboard" : buildRegisterHref("/dashboard")}>
+              {user ? "Mon espace de formation" : "Créer un espace membre"}
+            </Button>
+            <Button href="#simulateurs" variant="ghost">
+              Voir les simulateurs
+            </Button>
+          </div>
+        </div>
+
+        <div className="cp-hero-divider" />
+
+        {/* Aperçu des 6 modules */}
+        <div className="cp-hero-preview">
+          {ALL_GAMES.map((game) => (
+            <div key={game.id} className="cp-hero-preview-card">
+              <div className="cp-hero-preview-icon">{game.abbrev}</div>
+              <div className="cp-hero-preview-name">{game.name}</div>
+              <div className="cp-hero-preview-tag">{user ? "Disponible" : "Accès membre"}</div>
+            </div>
+          ))}
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 export default function Home() {
-  const { user, loading, isDemoMode } = useAuth();
+  const { user } = useAuth();
 
   return (
     <AppShell
-      badge="Plateforme de formation croupier"
-      containerStyle={{ paddingTop: 36, paddingBottom: 72 }}
       density="comfortable"
       showSecondaryNav={false}
+      heroContent={<HeroSection user={user} />}
     >
-      <Card tone="elevated" className="cp-landing-hero-card" style={{ overflow: "hidden", position: "relative" }}>
-        <div className="cp-orb cp-orb-gold" style={{ width: 360, height: 360, top: -90, right: -60 }} />
-        <div className="cp-orb cp-orb-green" style={{ width: 260, height: 260, bottom: -90, left: -30 }} />
 
-        <div className="cp-landing-hero">
-          <div className="cp-page-hero">
-            <Badge style={{ marginBottom: 4 }}>
-              <span className="cp-badge-dot" /> Formation, procedure et repetition metier
-            </Badge>
-            <h1 className="cp-page-title">
-              Former un croupier ne devrait pas reposer uniquement sur le <span className="cp-gold">temps de table disponible</span>.
-            </h1>
-            <p className="cp-page-copy">
-              CroupierPro propose un environnement de formation premium pour travailler les reflexes de table, la
-              procedure et la regularite d'execution. La plateforme combine simulateurs, suivi de progression, coach
-              de revision et parcours de certification dans une experience pensee pour un usage serieux, avec un
-              espace membre au centre des outils les plus utiles.
+      {/* ── MODULES DE FORMATION ── */}
+      <section id="simulateurs">
+        <SectionHeader
+          eyebrow="Les modules"
+          title="9 simulateurs de procédures complètes"
+          description="Chaque module reproduit la procédure réelle d'un jeu de casino : annonces, décisions, paiements et gestion de table. Les mêmes standards qu'en formation terrain."
+        />
+
+        {GAME_FAMILIES.map((group) => (
+          <div key={group.family} className="cp-game-group">
+            <div className="cp-game-group-label">{group.family}</div>
+            <div className="cp-game-module-grid">
+              {group.games.map((game) => (
+                <Card key={game.id} padded="lg" tone="elevated" className="cp-game-module-card">
+                  <div className="cp-game-module-head">
+                    <div className="cp-game-abbrev">{game.abbrev}</div>
+                    {!user && (
+                      <span className="cp-game-lock-tag">Accès membre</span>
+                    )}
+                  </div>
+                  <div className="cp-game-module-name">{game.name}</div>
+                  <div className="cp-game-module-desc cp-muted">{game.desc}</div>
+                  <div className="cp-game-module-footer">
+                    <Button href={buildProtectedHref(Boolean(user), game.route)} block>
+                      {user ? "Ouvrir le simulateur" : "Se connecter pour accéder"}
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
+
+      {/* ── PARCOURS ── */}
+      <section>
+        <SectionHeader
+          eyebrow="Progression"
+          title="Cinq niveaux, une trajectoire claire"
+          description="Le parcours est structuré pour construire les compétences dans l'ordre. Chaque session alimente le suivi : volume, précision, régularité."
+        />
+        <Card padded="lg" tone="elevated">
+          <div className="cp-level-track">
+            {levels.map((level) => (
+              <div key={level.num} className="cp-level-step">
+                <div className="cp-level-node">{level.num}</div>
+                <div className="cp-level-step-label">{level.label}</div>
+                <div className="cp-level-step-desc">{level.desc}</div>
+              </div>
+            ))}
+          </div>
+          <div className="cp-level-track-note">
+            L'avancement est visible et mesurable. Chaque niveau débloque des situations plus complexes jusqu'à une tenue de table autonome et stable.
+          </div>
+        </Card>
+      </section>
+
+      {/* ── CERTIFICATION ── */}
+      <section>
+        <SectionHeader
+          eyebrow="Certification"
+          title="Un référentiel de niveau lisible"
+          description="Trois paliers progressifs. Une lecture claire du niveau atteint, vérifiable par un employeur ou un centre de formation."
+        />
+        <div className="cp-cert-tier-grid">
+          {certTiers.map((tier) => (
+            <Card key={tier.key} padded="lg" tone={tier.target ? "elevated" : "default"}>
+              <div className={`cp-cert-tier-label cp-cert-${tier.key}`}>{tier.label}</div>
+              <div style={{ marginTop: 14, fontWeight: 600, fontSize: 14, lineHeight: 1.3 }}>{tier.title}</div>
+              <div className="cp-muted" style={{ marginTop: 10, fontSize: 13, lineHeight: 1.7 }}>{tier.desc}</div>
+              {tier.target && (
+                <Badge tone="pill" style={{ marginTop: 18, width: "fit-content" }}>Niveau cible</Badge>
+              )}
+            </Card>
+          ))}
+        </div>
+        <div style={{ marginTop: 24 }}>
+          <Button href={user ? "/certification" : buildRegisterHref("/certification")}>
+            {user ? "Voir mon parcours de certification" : "Commencer le parcours"}
+          </Button>
+        </div>
+      </section>
+
+      {/* ── ACCES MEMBRE ── */}
+      <Card tone="elevated" padded="lg">
+        <div className="cp-access-block">
+          <div className="cp-access-block-text">
+            <div className="cp-section-eyebrow">Accès membre</div>
+            <h2 className="cp-section-title">Tout l'environnement de formation dans un seul espace</h2>
+            <p className="cp-subtitle" style={{ marginTop: 12 }}>
+              Les simulateurs, le suivi de progression et la certification sont accessibles après inscription.
+              Gratuit, sans engagement.
             </p>
-
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ marginTop: 28 }}>
               <Button href={user ? "/dashboard" : buildRegisterHref("/dashboard")}>
-                {user ? "Ouvrir mon espace" : "Creer un espace membre"}
+                {user ? "Accéder à mon espace" : "Créer un compte gratuitement"}
               </Button>
-              <Button href={user ? "/simulateur" : buildLoginHref("/dashboard")} variant="secondary">
-                {user ? "Ouvrir les simulateurs" : "Se connecter"}
-              </Button>
-              <Button href="/catalogue" variant="ghost">Voir les jeux couverts</Button>
-            </div>
-
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Badge tone="pill">{AVAILABLE_GAMES.length} modules membres disponibles</Badge>
-              <Badge tone="pill">Compte requis pour debloquer les outils membres</Badge>
-              <Badge tone="pill">Suivi de progression par jeu</Badge>
-              <Badge tone="pill">Certification structuree</Badge>
-              {isDemoMode ? <Badge tone="pill">Configuration locale detectee</Badge> : null}
             </div>
           </div>
-
-          <div className="cp-landing-hero-side">
-            <div className="cp-surface-strip">
-              {[
-                { value: String(AVAILABLE_GAMES.length), label: "jeux membres disponibles" },
-                { value: "5", label: "niveaux de certification" },
-                { value: "24/7", label: "acces plateforme" },
-                { value: loading ? "..." : user ? "Compte actif" : "Acces decouverte", label: "statut session" },
-              ].map((item) => (
-                <StatCard key={item.label} value={item.value} label={item.label} accent />
-              ))}
-            </div>
-
-            <Card padded="md" tone="muted">
-              <div className="cp-section-eyebrow">Positionnement produit</div>
-              <div className="cp-landing-proof-title">Une couche de repetition avant, pendant et apres la formation terrain.</div>
-              <div className="cp-muted" style={{ marginTop: 10 }}>
-                La plateforme ne remplace pas la table. Elle professionnalise la preparation, la revision et le suivi
-                entre les mises en situation reelles.
-              </div>
-            </Card>
-          </div>
+          <ul className="cp-access-feature-list">
+            {memberFeatures.map((f) => (
+              <li key={f}>{f}</li>
+            ))}
+          </ul>
         </div>
       </Card>
 
-      <section>
-        <SectionHeader
-          eyebrow="Comment ca marche"
-          title="Une progression en trois temps, lisible par le candidat comme par l'encadrant"
-          description="La plateforme est construite pour apprendre, repeter puis verifier. Chaque couche a un role clair dans le parcours."
-        />
-
-        <div className="cp-card-grid">
-          {steps.map((step, index) => (
-            <Card key={step.title} padded="md">
-              <Badge tone="pill">Etape {index + 1}</Badge>
-              <div style={{ marginTop: 14, fontWeight: 800, fontSize: 20 }}>{step.title}</div>
-              <div className="cp-muted" style={{ marginTop: 10 }}>{step.copy}</div>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <SectionHeader
-          eyebrow="Jeux couverts"
-          title="Les jeux disponibles sont relies a la meme registry produit"
-          description="Tous les simulateurs affiches ici ont une route active, une fiche catalogue et un point d'entree visible dans le site."
-          action={<Button href="/catalogue" variant="ghost">Catalogue complet</Button>}
-        />
-
-        <div className="cp-card-grid">
-          {LANDING_GAMES.map((game) => (
-            <Card key={game.id} padded="md" tone="elevated">
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "start" }}>
-                <div className="cp-dashboard-game-icon" style={{ width: 48, height: 48, fontSize: 16 }}>{game.icon}</div>
-                <Badge tone="pill">{user ? "Disponible" : "Compte requis"}</Badge>
-              </div>
-              <div style={{ marginTop: 16, fontWeight: 800, fontSize: 20 }}>{game.name}</div>
-              <div className="cp-muted" style={{ marginTop: 10 }}>
-                {game.tagline}. Entrainement centre sur la procedure, la resolution, les paiements et la tenue generale du jeu.
-              </div>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 18 }}>
-                <Button href={buildProtectedHref(Boolean(user), game.route)}>
-                  {user ? "Ouvrir le simulateur" : "Se connecter pour debloquer"}
-                </Button>
-                {!user ? <Button href={buildRegisterHref(game.route)} variant="ghost">Creer un compte</Button> : null}
-              </div>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <SectionHeader
-          eyebrow="Modes d'apprentissage"
-          title="Une meme plateforme pour pratiquer, revoir et structurer la montee en competence"
-          description="Chaque mode repond a un usage different: prise en main, repetition, revision, suivi ou validation."
-        />
-
-        <div className="cp-card-grid">
-          {learningModes.map((mode) => (
-            <ProgressCard
-              key={mode.title}
-              title={mode.title}
-              subtitle={mode.subtitle}
-              progress={mode.progress}
-              status={mode.status}
-              value={mode.value}
-              meta={mode.meta}
-            >
-              {mode.details.map((detail) => (
-                <div key={detail} className="cp-muted">{detail}</div>
-              ))}
-            </ProgressCard>
-          ))}
-        </div>
-      </section>
-
-      <section className="cp-stack-wide">
-        <Card tone="elevated">
-          <SectionHeader
-            eyebrow="Certification"
-            title="Un referentiel progressif, du socle technique a l'autonomie de table"
-            description="La certification donne une lecture plus claire du niveau atteint, sans promettre artificiellement une employabilite instantanee."
-            action={
-              <Button href={user ? "/certification" : buildRegisterHref("/certification")} variant="secondary">
-                {user ? "Voir le parcours" : "Creer un compte pour suivre le parcours"}
-              </Button>
-            }
-          />
-
-          <div className="cp-surface-strip">
-            <StatCard value="Bronze" label="bases et procedures tenues avec accompagnement" />
-            <StatCard value="Silver" label="autonomie encadree sur les tables classiques" />
-            <StatCard value="Gold" label="niveau vise pour une tenue de table plus stable" accent />
-          </div>
-        </Card>
-
-        <Card>
-          <SectionHeader
-            eyebrow="Valeur produit"
-            title="Ce que CroupierPro apporte vraiment"
-            description="Un environnement plus rigoureux que du simple contenu e-learning, et plus disponible qu'une formation uniquement dependante de la table."
-          />
-
-          <div className="cp-card-grid">
-            <StatCard value="Suivi" label="historique de sessions consultable" />
-            <StatCard value="Revision" label="coach pour les regles, paiements et incidents" />
-            <StatCard value="Cadre" label="navigation, progression et parcours unifies" />
-          </div>
-        </Card>
-      </section>
-
-      <section>
-        <SectionHeader
-          eyebrow="Publics"
-          title="Une plateforme utile aux candidats comme aux structures qui encadrent la formation"
-          description="Le discours, les usages et les attentes ne sont pas les memes. La landing les distingue explicitement."
-        />
-
-        <div className="cp-card-grid">
-          {audienceBlocks.map((block) => (
-            <Card key={block.title} padded="lg">
-              <div style={{ fontWeight: 800, fontSize: 22 }}>{block.title}</div>
-              <div className="cp-grid" style={{ gap: 12, marginTop: 18 }}>
-                {block.points.map((point) => (
-                  <div key={point} className="cp-muted">{point}</div>
-                ))}
-              </div>
-              <div style={{ marginTop: 20 }}>
-                <Button href={block.cta.href} variant={block.title === "Pour les candidats" ? "primary" : "ghost"}>
-                  {block.cta.label}
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <Card tone="elevated" className="cp-landing-final-cta">
-        <div className="cp-page-hero" style={{ marginBottom: 0 }}>
-          <div className="cp-page-kicker">Pret a tester la plateforme</div>
-          <h2 className="cp-page-title" style={{ fontSize: "clamp(2rem, 3vw, 3rem)" }}>
-            Un premier niveau de decouverte est deja accessible. L'espace membre ouvre ensuite le suivi complet.
-          </h2>
-          <p className="cp-page-copy">
-            Explorez d'abord le catalogue public, puis ouvrez un compte pour retrouver vos sessions, votre
-            progression, les simulateurs complets et le parcours de certification.
-          </p>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <Button href={user ? "/dashboard" : buildRegisterHref("/dashboard")}>
-              {user ? "Acceder a mon dashboard" : "Ouvrir un espace membre"}
-            </Button>
-            <Button href={user ? "/simulateur" : buildLoginHref("/dashboard")} variant="secondary">
-              {user ? "Ouvrir les simulateurs" : "Se connecter"}
-            </Button>
-            <Button href="/catalogue" variant="ghost">Explorer le catalogue</Button>
-          </div>
-        </div>
-      </Card>
     </AppShell>
   );
 }

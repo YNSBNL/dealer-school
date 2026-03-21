@@ -1,4 +1,4 @@
-# CroupierPro.fr — chantier stabilisation front + backend
+# Dealer-School.com — chantier stabilisation front + backend
 
 ## Ce qui a été refait dans cette version
 
@@ -18,8 +18,17 @@ Copie `.env.local.example` vers `.env.local`, puis renseigne :
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SITE_URL` (`http://localhost:3000` en local)
 
 Ensuite exécute `supabase-schema.sql` dans l'éditeur SQL de Supabase.
+
+Dans `Authentication > URL Configuration`, ajoute aussi :
+
+- `Site URL` = ton URL publique actuelle
+- `Redirect URLs` = `http://localhost:3000/auth/callback` en local
+- `Redirect URLs` = ton domaine de production suivi de `/auth/callback`
+
+Si tu utilises les emails fournis par défaut par Supabase sans SMTP personnalisé, les limites sont basses et certaines adresses peuvent être refusées. Les messages `rate limit` ou `Email address not authorized` viennent souvent de cette configuration.
 
 ### 2. Configurer le coach IA (optionnel)
 

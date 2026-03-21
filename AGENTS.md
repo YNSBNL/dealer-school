@@ -1,7 +1,7 @@
-# CroupierPro - AGENTS.md
+# Dealer School - AGENTS.md
 
 ## Objectif produit
-CroupierPro est une plateforme premium de formation de croupiers.
+Dealer School est une plateforme premium de formation de dealers de casino.
 Le code doit privilégier :
 1. réalisme métier,
 2. robustesse algorithmique,

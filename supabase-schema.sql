@@ -1,5 +1,5 @@
 -- ============================================================
--- CroupierPro — Supabase Database Schema
+-- Dealer School — Supabase Database Schema
 -- Run this in your Supabase SQL Editor (Dashboard > SQL)
 -- ============================================================
 

@@ -14,17 +14,6 @@ export function buildTrainingRound() {
   const deck = createShuffledDeck();
   const playerHand = drawCards(deck, 3) as Card[];
   const dealerHand = drawCards(deck, 3) as Card[];
-  const state = {
-    playerHand,
-    dealerHand,
-    playerAction: "play",
-    bets: { ante: 10, play: 10, pairPlus: 5 },
-  };
-
-  return {
-    ...state,
-    result: resolveAntePlay(state),
-    pairPlus: resolvePairPlus(playerHand),
-    anteBonus: resolveAnteBonus(playerHand),
-  };
+  const state = { playerHand, dealerHand, playerAction: "play", bets: { ante: 10, play: 10, pairPlus: 5 } };
+  return { ...state, result: resolveAntePlay(state), pairPlus: resolvePairPlus(playerHand), anteBonus: resolveAnteBonus(playerHand) };
 }

@@ -1,5 +1,4 @@
 "use client";
-
 import PokerRoundSimulator from "@/components/PokerRoundSimulator";
 import { buildTrainingRound } from "@/features/let-it-ride/engine";
 import { getQualificationLabel } from "@/features/let-it-ride/selectors";
@@ -15,7 +14,7 @@ export default function LetItRidePage() {
   return (
     <PokerRoundSimulator
       game={game}
-      intro="Lecture rapide d'une main finale Let It Ride et de sa qualification pair de 10 ou mieux."
+      intro="Lecture rapide d une main finale Let It Ride et de sa qualification pair de 10 ou mieux."
       buildRound={buildTrainingRound}
       question="La main finale qualifie-t-elle le paiement principal ?"
       answerOptions={OPTIONS}

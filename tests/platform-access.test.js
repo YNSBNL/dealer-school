@@ -22,5 +22,5 @@ test("public and private route groups are declared centrally", () => {
 test("middleware redirects protected routes when auth is unavailable", () => {
   assert.match(middlewareSource, /auth_unavailable/);
   assert.match(middlewareSource, /isPrivateRoute/);
-  assert.doesNotMatch(middlewareSource, /x-croupierpro-auth-degraded/);
+  assert.doesNotMatch(middlewareSource, /x-dealer-school-auth-degraded/);
 });

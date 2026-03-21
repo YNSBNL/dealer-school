@@ -59,12 +59,12 @@ export default function SimulatorHeader({ title, badge, stats = null, onBackToMe
         <div className="cp-topbar-main">
           <div className="cp-topbar-brand">
             <Link href="/" className="cp-logo">
-              Croupier<span>Pro</span>
+              Dealer<span>School</span>
             </Link>
             <div className="cp-topbar-product">
               <div className="cp-topbar-product-label">Mode simulateur</div>
               <div className="cp-topbar-product-copy">
-                {title} - environnement d entrainement integre au parcours CroupierPro
+                {title} - environnement d entrainement integre au parcours Dealer School
               </div>
             </div>
           </div>

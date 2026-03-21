@@ -114,47 +114,45 @@ export default function Dashboard() {
   const progressPct = Math.min(100, Math.round(((xp - currentLevelBase) / 500) * 100));
   const recommendation = bestGame?.route || "/simulateur";
   const recommendationLabel = bestGame?.shortName
-    ? `Approfondir ${bestGame.shortName}`
-    : "Ouvrir le catalogue";
+    ? `Continuer ${bestGame.shortName}`
+    : "Ouvrir les simulateurs";
   const hasMemberData = totalSessions > 0 || activeGames > 0 || avgAccuracy > 0;
 
   return (
     <AppShell badge="Dashboard" containerStyle={{ paddingTop: 36, paddingBottom: 72 }} density="comfortable">
-      <Card className="cp-dashboard-hero" style={{ overflow: "hidden", position: "relative" }}>
-        <div className="cp-orb cp-orb-gold" style={{ width: 300, height: 300, top: -90, right: -70 }} />
-        <div className="cp-orb cp-orb-green" style={{ width: 240, height: 240, bottom: -60, left: -30 }} />
-
-        <div className="cp-product-hero" style={{ position: "relative", zIndex: 1 }}>
+      <Card className="cp-dashboard-hero" style={{ overflow: "hidden" }}>
+        <div className="cp-product-hero">
           <div className="cp-product-hero-main">
-            <div className="cp-section-eyebrow">Suivi apprenant</div>
-            <h1 className="cp-section-title" style={{ fontSize: "clamp(2.35rem, 4vw, 4rem)" }}>
-              {profile?.display_name || "Votre progression"} a un niveau de lecture
-              <span className="cp-gold"> enfin exploitable</span>
+            <div className="cp-section-eyebrow">Tableau de bord</div>
+            <h1 className="cp-section-title" style={{ fontSize: "clamp(2.2rem, 4vw, 3.6rem)" }}>
+              {profile?.display_name
+                ? `Bonjour, ${profile.display_name}.`
+                : "Votre espace de formation."}
             </h1>
-            <p className="cp-subtitle" style={{ maxWidth: 720 }}>
-              Sessions pratiquees, jeux alimentes, niveau, rang et signaux de progression sont regroupes dans un meme
-              espace. Le dashboard sert a orienter la suite du travail, pas seulement a afficher des chiffres.
+            <p className="cp-subtitle" style={{ maxWidth: 640 }}>
+              Progression par jeu, sessions enregistrées et indicateurs de préparation
+              regroupés pour orienter la suite du travail.
             </p>
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Badge tone="pill">{totalSessions} sessions suivies</Badge>
-              <Badge tone="pill">{activeGames} jeux alimentes</Badge>
-              <Badge tone="pill">{avgAccuracy}% de precision moyenne</Badge>
-              <Badge tone="pill">{certifiedGames} validation(s)</Badge>
-              {isDemoMode ? <Badge tone="pill">Mode demo</Badge> : null}
+              <Badge tone="pill">{totalSessions} sessions</Badge>
+              <Badge tone="pill">{activeGames} jeux travaillés</Badge>
+              <Badge tone="pill">{avgAccuracy}% précision moyenne</Badge>
+              {certifiedGames > 0 && <Badge tone="pill">{certifiedGames} validation(s)</Badge>}
+              {isDemoMode ? <Badge tone="pill">Mode démo</Badge> : null}
             </div>
 
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <Button href={recommendation}>{recommendationLabel}</Button>
-              <Button href="/tuteur" variant="secondary">Demander un debrief</Button>
-              <Button href="/catalogue" variant="ghost">Explorer les autres jeux</Button>
+              <Button href="/tuteur" variant="secondary">Coach IA</Button>
+              <Button href="/catalogue" variant="ghost">Catalogue</Button>
             </div>
 
             {isDemoMode ? (
               <ErrorState
                 tone="info"
-                title="Mode demo actif"
-                description={demoReason || "Le dashboard fonctionne en mode local tant que Supabase reste desactive."}
+                title="Mode démo actif"
+                description={demoReason || "Le dashboard fonctionne en mode local tant que Supabase n'est pas configuré."}
               />
             ) : null}
             {authError ? <ErrorState description={authError} /> : null}
@@ -165,18 +163,18 @@ export default function Dashboard() {
             <Card padded="md" className="cp-dashboard-profile-card">
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "start" }}>
                 <div>
-                  <div className="cp-muted" style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.12em" }}>
+                  <div className="cp-muted" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.12em" }}>
                     Niveau actuel
                   </div>
-                  <div style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 800, marginTop: 6 }}>{rank}</div>
+                  <div style={{ fontSize: "clamp(1.8rem, 3.5vw, 2.6rem)", fontWeight: 800, marginTop: 6 }}>{rank}</div>
                 </div>
                 <Badge>Niveau {level}</Badge>
               </div>
 
-              <div style={{ marginTop: 22 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12, marginBottom: 10 }}>
-                  <span className="cp-muted">{xp} XP acquis</span>
-                  <span className="cp-muted">{nextLevelXp} XP prochain palier</span>
+              <div style={{ marginTop: 20 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12, marginBottom: 8 }}>
+                  <span className="cp-muted">{xp} XP</span>
+                  <span className="cp-muted">Prochain palier : {nextLevelXp} XP</span>
                 </div>
                 <div className="cp-progress">
                   <span style={{ width: `${progressPct}%` }} />
@@ -186,19 +184,19 @@ export default function Dashboard() {
               <div className="cp-card-stack" style={{ marginTop: 20 }}>
                 <div className="cp-dashboard-mini-stat">
                   <strong>{bestGame?.shortName || "Aucune table dominante"}</strong>
-                  <span>jeu actuellement le plus stable</span>
+                  <span>Jeu le plus travaillé</span>
                 </div>
                 <div className="cp-dashboard-mini-stat">
-                  <strong>{latestSession ? niceDate(latestSession.created_at) : "-"}</strong>
-                  <span>derniere activite enregistree</span>
+                  <strong>{latestSession ? niceDate(latestSession.created_at) : "—"}</strong>
+                  <span>Dernière session</span>
                 </div>
               </div>
             </Card>
 
             <div className="cp-kpi-row">
               <StatCard value={totalSessions} label="sessions" />
-              <StatCard value={`${avgAccuracy}%`} label="precision moyenne" accent />
-              <StatCard value={activeGames} label="jeux travailles" />
+              <StatCard value={`${avgAccuracy}%`} label="précision" accent />
+              <StatCard value={activeGames} label="jeux actifs" />
             </div>
           </div>
         </div>
@@ -208,9 +206,9 @@ export default function Dashboard() {
         <Card>
           <SectionHeader
             eyebrow="Progression par jeu"
-            title="Ou en est le travail par table"
-            description="Chaque carte combine volume pratique, progression, precision et niveau de validation pour aider a prioriser la suite."
-            action={<Button href="/catalogue" variant="ghost">Voir le catalogue</Button>}
+            title="Avancement par simulateur"
+            description="Volume de pratique, précision et état de validation pour chaque jeu travaillé. Priorisez les modules en consolidation."
+            action={<Button href="/catalogue" variant="ghost">Catalogue</Button>}
           />
 
           {loading && !hasMemberData ? (
@@ -226,7 +224,7 @@ export default function Dashboard() {
                     title={game.shortName}
                     subtitle={game.familyLabel}
                     progress={game.progress || 0}
-                    status={game.certified ? `Valide ${game.cert_level}` : "En cours"}
+                    status={game.certified ? `Validé ${game.cert_level}` : "En cours"}
                     value={`${game.progress || 0}%`}
                     meta={(
                       <div>
@@ -242,14 +240,14 @@ export default function Dashboard() {
                       <div className="cp-dashboard-game-stats">
                         <div>
                           <strong>{game.accuracy || 0}%</strong>
-                          <span>precision</span>
+                          <span>précision</span>
                         </div>
                         <div>
                           <strong>{game.best_streak || 0}</strong>
-                          <span>serie max</span>
+                          <span>série max</span>
                         </div>
                         <div>
-                          <strong>{game.certified ? game.cert_level : "-"}</strong>
+                          <strong>{game.certified ? game.cert_level : "—"}</strong>
                           <span>niveau</span>
                         </div>
                       </div>
@@ -264,15 +262,15 @@ export default function Dashboard() {
         <div className="cp-card-stack">
           <Card>
             <SectionHeader
-              eyebrow="Activite recente"
-              title="Les dernieres sessions utiles a relire"
-              description="Le flux recent permet de voir rapidement quel jeu a ete pratique, dans quel mode et avec quel niveau de maitrise."
+              eyebrow="Activité récente"
+              title="Dernières sessions enregistrées"
+              description="Résultats par jeu et par session. Score, précision et lecture qualitative de chaque passage."
             />
 
             {loading ? (
               <LoadingState title="Chargement des sessions..." />
             ) : sessions.length === 0 ? (
-              <EmptyState description="Aucune session enregistree pour le moment. Lance un simulateur pour commencer a alimenter ton suivi." />
+              <EmptyState description="Aucune session enregistrée. Lancez un simulateur pour alimenter le suivi." />
             ) : (
               <div className="cp-dashboard-session-list">
                 {sessions.map((session) => {
@@ -284,9 +282,9 @@ export default function Dashboard() {
                       <div style={{ display: "flex", gap: 14, alignItems: "center", minWidth: 0 }}>
                         <div className="cp-dashboard-session-icon">{game?.icon || "?"}</div>
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontWeight: 800 }}>{game?.shortName || session.game_id}</div>
+                          <div style={{ fontWeight: 700 }}>{game?.shortName || session.game_id}</div>
                           <div className="cp-muted" style={{ fontSize: 13, marginTop: 4 }}>
-                            {(MODE_LABELS[session.mode] || session.mode)} - {niceDate(session.created_at)}
+                            {(MODE_LABELS[session.mode] || session.mode)} · {niceDate(session.created_at)}
                           </div>
                         </div>
                       </div>
@@ -298,11 +296,11 @@ export default function Dashboard() {
                         </div>
                         <div>
                           <strong>{session.accuracy || 0}%</strong>
-                          <span>precision</span>
+                          <span>précision</span>
                         </div>
                         <div>
                           <strong>{session.rounds_correct || 0}/{session.rounds_played || 0}</strong>
-                          <span>series</span>
+                          <span>réponses</span>
                         </div>
                         <div className={mood.className} style={{ fontWeight: 700, fontSize: 12 }}>
                           {mood.label}
@@ -317,22 +315,22 @@ export default function Dashboard() {
 
           <Card>
             <SectionHeader
-              eyebrow="Synthese"
-              title="Axes de progression les plus visibles"
-              description="Cette lecture melange scores derives des sessions et competences deja stockees dans Supabase quand elles existent."
+              eyebrow="Compétences"
+              title="Axes de progression identifiés"
+              description="Indicateurs calculés à partir des sessions enregistrées. Mis à jour automatiquement après chaque pratique."
             />
 
             {loading && !skillCards.length ? (
-              <LoadingState title="Chargement des competences..." />
+              <LoadingState title="Chargement des compétences..." />
             ) : skillCards.length === 0 ? (
-              <EmptyState description="Les competences apparaitront ici a mesure que les sessions s'accumulent." />
+              <EmptyState description="Les indicateurs apparaîtront ici à mesure que les sessions s'accumulent." />
             ) : (
               <div className="cp-dashboard-skill-grid">
                 {skillCards.map((skill) => (
                   <div key={skill.key} className="cp-dashboard-skill-card">
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
                       <strong>{skill.label}</strong>
-                      <span className="cp-gold" style={{ fontWeight: 800 }}>{skill.score}%</span>
+                      <span className="cp-gold" style={{ fontWeight: 700 }}>{skill.score}%</span>
                     </div>
                     <div className="cp-progress" style={{ marginTop: 12 }}>
                       <span style={{ width: `${skill.score}%` }} />

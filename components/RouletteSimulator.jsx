@@ -801,7 +801,7 @@ export default function RouletteSimulator() {
             </div>
 
             <button style={styles.startBtn} onClick={startRound}>
-              Lancer l'entraînement
+              Lancer l&apos;entraînement
             </button>
 
             {totalRounds > 0 && (

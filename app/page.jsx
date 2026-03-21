@@ -141,7 +141,7 @@ function HeroSection({ user }) {
 
           <p className="cp-hero-lead">
             Simulateurs de procédures réelles, suivi de progression et certification structurée.
-            Un environnement d'entraînement conçu pour les standards du métier.
+            Un environnement d&apos;entraînement conçu pour les standards du métier.
           </p>
 
           <div className="cp-hero-cta">
@@ -235,7 +235,7 @@ export default function Home() {
             ))}
           </div>
           <div className="cp-level-track-note">
-            L'avancement est visible et mesurable. Chaque niveau débloque des situations plus complexes jusqu'à une tenue de table autonome et stable.
+            L&apos;avancement est visible et mesurable. Chaque niveau débloque des situations plus complexes jusqu&apos;à une tenue de table autonome et stable.
           </div>
         </Card>
       </section>
@@ -271,7 +271,7 @@ export default function Home() {
         <div className="cp-access-block">
           <div className="cp-access-block-text">
             <div className="cp-section-eyebrow">Accès membre</div>
-            <h2 className="cp-section-title">Tout l'environnement de formation dans un seul espace</h2>
+            <h2 className="cp-section-title">Tout l&apos;environnement de formation dans un seul espace</h2>
             <p className="cp-subtitle" style={{ marginTop: 12 }}>
               Les simulateurs, le suivi de progression et la certification sont accessibles après inscription.
               Gratuit, sans engagement.

@@ -218,7 +218,7 @@ export default function BlackjackSimulator(){
     <div style={{minHeight:"100vh",background:"#080808",color:"#F5F0E8",fontFamily:"'DM Sans',sans-serif"}}>
       <Hdr label="Addition"/>
       <div style={{maxWidth:500,margin:"0 auto",padding:"40px 16px",textAlign:"center"}}>
-        <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#C9A84C",marginBottom:16}}>Arrête-toi entre 17 et 21 · L'As vaut 1 ou 11</div>
+        <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#C9A84C",marginBottom:16}}>Arrête-toi entre 17 et 21 · L&apos;As vaut 1 ou 11</div>
         <div style={{background:"radial-gradient(ellipse,#1A6B4F,#0F3D1F)",borderRadius:16,padding:"32px 24px",border:"3px solid rgba(201,168,76,0.15)",boxShadow:"inset 0 0 60px rgba(0,0,0,0.2)"}}>
           <div style={{display:"flex",gap:6,justifyContent:"center",marginBottom:8,flexWrap:"wrap"}}>{l1Cards.map(c=><Card key={c.id} card={c} size="lg"/>)}</div>
         </div>

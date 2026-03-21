@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import AppShell from "@/components/AppShell";
+import SimulatorHeader from "@/components/SimulatorHeader";
 import { saveSession } from "@/lib/api";
 import { formatCardLabel, SUIT_COLORS } from "@/lib/card-utils";
 import { Badge, Button, Card, SectionHeader, StatCard } from "@/components/ui";
@@ -99,7 +99,9 @@ export default function PokerRoundSimulator({
   }
 
   return (
-    <AppShell badge={`Simulateur · ${game.shortName}`} density="comfortable">
+    <div className="cp-sim-shell cp-sim-page">
+      <SimulatorHeader title={game.name} badge={`Simulateur · ${game.shortName}`} stats={stats.played > 0 ? `${accuracy}% · ${stats.played} donnes` : null} />
+      <div className="cp-page-container" style={{ padding: "24px 16px" }}>
       <Card tone="elevated">
         <div className="cp-product-hero">
           <div className="cp-product-hero-main">
@@ -178,6 +180,7 @@ export default function PokerRoundSimulator({
           </div>
         </Card>
       </div>
-    </AppShell>
+      </div>
+    </div>
   );
 }

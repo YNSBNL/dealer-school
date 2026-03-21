@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import SimulatorHeader from "@/components/SimulatorHeader";
 
 // ── ENGINE ──
 const SUITS=["♠","♥","♦","♣"],SC={"♠":"#1a1a1a","♥":"#C62828","♦":"#C62828","♣":"#1a1a1a"};
@@ -241,12 +242,9 @@ export default function UltimateTexasSimulator(){
 
   // ── MENU ──
   if(screen==="menu")return(
-    <div style={{minHeight:"100vh",background:"#080808",color:"#F5F0E8",fontFamily:"'DM Sans',sans-serif"}}>
+    <div className="cp-sim-shell cp-sim-page">
       <div style={{position:"fixed",inset:0,opacity:0.02,pointerEvents:"none",zIndex:9999,backgroundImage:`url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`}}/>
-      <div style={{padding:"12px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid rgba(201,168,76,0.1)",background:"rgba(8,8,8,0.95)"}}>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:900}}>Dealer<span style={{color:"#C9A84C"}}>School</span></div>
-        <div style={{padding:"4px 12px",border:"1px solid rgba(201,168,76,0.2)",borderRadius:50,fontSize:9,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",color:"#C9A84C"}}>Ultimate Texas Hold&apos;em</div>
-      </div>
+      <SimulatorHeader title="Ultimate Texas Hold'em" badge="UTH" />
       <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"82vh",gap:20,padding:"0 16px"}}>
         <div style={{textAlign:"center"}}>
           <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#C9A84C",marginBottom:6}}>Dealer School</div>
@@ -272,21 +270,8 @@ export default function UltimateTexasSimulator(){
   const isL1=diff===1;
 
   return(
-    <div style={{minHeight:"100vh",background:"#080808",color:"#F5F0E8",fontFamily:"'DM Sans',sans-serif"}}>
-      <div style={{padding:"4px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid rgba(201,168,76,0.08)",background:"rgba(8,8,8,0.95)"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:900}}>Dealer<span style={{color:"#C9A84C"}}>School</span></div>
-          <div style={{padding:"2px 8px",border:"1px solid rgba(201,168,76,0.15)",borderRadius:50,fontSize:7,fontWeight:600,color:"#C9A84C"}}>UTH · {table.min}-{table.max}€</div>
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{padding:"2px 8px",background:"rgba(201,168,76,0.05)",border:"1px solid rgba(201,168,76,0.12)",borderRadius:3,textAlign:"center"}}>
-            <div style={{fontSize:6,fontWeight:700,color:"#C9A84C"}}>JACKPOT</div>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:11,fontWeight:900,color:"#C9A84C"}}>{jackpot.toLocaleString("fr-FR")}€</div>
-          </div>
-          <span style={{fontSize:8,color:"#BFB9AD"}}>{stats.score}pts · R{stats.rounds+1}{stats.total>0?` · ${Math.round(stats.ok/stats.total*100)}%`:""}</span>
-          <button onClick={()=>{setScreen("menu");setPhase("idle");}} style={{background:"none",border:"1px solid rgba(255,255,255,0.06)",color:"#777",padding:"2px 6px",borderRadius:2,fontSize:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>← Menu</button>
-        </div>
-      </div>
+    <div className="cp-sim-shell cp-sim-page">
+      <SimulatorHeader title="Ultimate Texas Hold'em" badge={`UTH · ${table.min}-${table.max}€`} stats={`${stats.score}pts · R${stats.rounds+1}${stats.total>0?` · ${Math.round(stats.ok/stats.total*100)}%`:""}`} onBackToMenu={()=>{setScreen("menu");setPhase("idle");}} />
       <div style={{maxWidth:1100,margin:"0 auto",padding:"8px 8px"}}>
         <div style={{background:"radial-gradient(ellipse 120% 80% at 50% 50%,#1A6B4F,#15553A 40%,#0F3D1F 80%,#0B3320)",borderRadius:"12px 12px 50% 50%/12px 12px 18% 18%",padding:"14px 16px 24px",border:"4px solid rgba(201,168,76,0.18)",boxShadow:"inset 0 0 100px rgba(0,0,0,0.2),0 16px 50px rgba(0,0,0,0.45),0 0 0 6px #111",position:"relative",minHeight:450}}>
           <div style={{position:"absolute",top:"45%",left:"50%",transform:"translate(-50%,-50%)",fontSize:14,fontWeight:700,letterSpacing:"0.3em",textTransform:"uppercase",color:"rgba(201,168,76,0.03)",fontFamily:"'Playfair Display',serif",whiteSpace:"nowrap",pointerEvents:"none"}}>ULTIMATE TEXAS HOLD&apos;EM</div>

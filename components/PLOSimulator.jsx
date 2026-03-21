@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import SimulatorHeader from "@/components/SimulatorHeader";
 
 // ── PLO ENGINE ──
 const SUITS=["♠","♥","♦","♣"],SC={"♠":"#1a1a1a","♥":"#C62828","♦":"#C62828","♣":"#1a1a1a"};
@@ -416,12 +417,9 @@ export default function PLOSimulator(){
 
   // ── MENU ──
   if(screen==="menu")return(
-    <div style={{minHeight:"100vh",background:"#080808",color:"#F5F0E8",fontFamily:"'DM Sans',sans-serif"}}>
+    <div className="cp-sim-shell cp-sim-page">
       <div style={{position:"fixed",inset:0,opacity:0.02,pointerEvents:"none",zIndex:9999,backgroundImage:`url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`}}/>
-      <div style={{padding:"12px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid rgba(201,168,76,0.1)",background:"rgba(8,8,8,0.95)"}}>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:900}}>Dealer<span style={{color:"#C9A84C"}}>School</span></div>
-        <div style={{padding:"4px 12px",border:"1px solid rgba(201,168,76,0.2)",borderRadius:50,fontSize:9,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",color:"#C9A84C"}}>Pot Limit Omaha</div>
-      </div>
+      <SimulatorHeader title="Pot Limit Omaha" badge="PLO" />
       <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"82vh",gap:20,padding:"0 16px"}}>
         <div style={{textAlign:"center"}}>
           <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#C9A84C",marginBottom:6}}>Dealer School</div>
@@ -459,11 +457,11 @@ export default function PLOSimulator(){
     </div>
   );
 
-  const Hdr=({label})=>(<div style={{padding:"4px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid rgba(201,168,76,0.08)",background:"rgba(8,8,8,0.95)",flexWrap:"wrap",gap:4}}><div style={{display:"flex",alignItems:"center",gap:8}}><div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:900}}>Dealer<span style={{color:"#C9A84C"}}>School</span></div><div style={{padding:"2px 8px",border:"1px solid rgba(201,168,76,0.15)",borderRadius:50,fontSize:7,fontWeight:600,color:"#C9A84C"}}>{label}</div></div><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:8,color:"#BFB9AD"}}>R{stats.rounds+1}{stats.total>0?` · ${Math.round(stats.ok/stats.total*100)}%`:""}</span><button onClick={()=>{setScreen("menu");}} style={{background:"none",border:"1px solid rgba(255,255,255,0.06)",color:"#777",padding:"2px 6px",borderRadius:2,fontSize:7,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>← Menu</button></div></div>);
+  const Hdr=({label})=>(<SimulatorHeader title="PLO" badge={label} stats={`R${stats.rounds+1}${stats.total>0?` · ${Math.round(stats.ok/stats.total*100)}%`:""}`} onBackToMenu={()=>{setScreen("menu");}} />);
 
   // ── MODE 1: BOARD READING ──
   if(mode===1&&screen==="game")return(
-    <div style={{minHeight:"100vh",background:"#080808",color:"#F5F0E8",fontFamily:"'DM Sans',sans-serif"}}>
+    <div className="cp-sim-shell cp-sim-page">
       <Hdr label="PLO · Lecture de board"/>
       <div style={{maxWidth:900,margin:"0 auto",padding:"12px 12px"}}>
         {!m1CompDone?(
@@ -542,7 +540,7 @@ export default function PLOSimulator(){
     if(m3Queue){var currentQIdx=m3Queue.length;if(m3Question&&m3Question.qIdx!=null)currentQIdx=m3Question.qIdx;for(var i=0;i<currentQIdx;i++){var a=m3Queue[i];if(a)playerLastAction[a.pidx]=a.type;}}
 
     return(
-      <div style={{minHeight:"100vh",background:"#0d2818",color:"#F5F0E8",fontFamily:"'DM Sans',sans-serif"}}>
+      <div className="cp-sim-shell cp-sim-page">
         <Hdr label={`PLO · Simulation · ${(m3Table||{}).sb}/${(m3Table||{}).bb}`}/>
         <div style={{maxWidth:750,margin:"0 auto",padding:"8px 8px"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 12px",background:"rgba(0,0,0,0.3)",borderRadius:6,marginBottom:6,fontSize:10}}>

@@ -1,6 +1,5 @@
 "use client";
 import { Suspense, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { createClient } from "@/lib/supabase-browser";
@@ -51,7 +50,7 @@ function LoginContent() {
                 <Input label="Mot de passe" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Votre mot de passe" required={configured} style={{ marginTop: 14 }} />
                 <Button type="submit" block style={{ marginTop: 20, opacity: loading ? 0.75 : 1 }} disabled={loading || !configured}>{loading ? "Connexion..." : configured ? "Se connecter" : "Configuration requise"}</Button>
               </form>
-              <div className="cp-auth-note">Pas encore de compte ? <Link href="/auth/register" className="cp-gold" style={{ fontWeight: 700, textDecoration: "none" }}>Creer un espace membre</Link></div>
+              <div className="cp-auth-note">Acces reserve aux comptes de formation.</div>
             </Card>
           </div>
         </div>

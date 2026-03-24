@@ -62,7 +62,6 @@ function TopBar({ badge = null }) {
             { href: "/", label: "Accueil", active: pathname === "/" },
             { href: "/catalogue", label: "Catalogue", active: pathname.startsWith("/catalogue") },
             { href: "/auth/login", label: "Connexion", active: pathname.startsWith("/auth/login") },
-            { href: "/auth/register", label: "Inscription", active: pathname.startsWith("/auth/register") },
           ]
     ),
     [pathname, user]
@@ -109,11 +108,8 @@ function TopBar({ badge = null }) {
               </Link>
             ) : !loading ? (
               <div className="cp-topbar-cta-group">
-                <Link href="/auth/login" className="cp-button-ghost">
+                <Link href="/auth/login" className="cp-button">
                   Connexion
-                </Link>
-                <Link href="/auth/register" className="cp-button">
-                  Creer un compte
                 </Link>
               </div>
             ) : null}

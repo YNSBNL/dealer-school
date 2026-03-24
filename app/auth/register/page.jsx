@@ -1,65 +1,27 @@
 "use client";
-import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
-import { createClient } from "@/lib/supabase-browser";
-import { isSupabaseConfigured, getLocalDevFallbackReason } from "@/lib/config";
-import { buildEmailRedirectUrl, getSupabaseAuthErrorMessage, sanitizeAuthRedirect } from "@/lib/auth-utils";
-import { Button, Card, ErrorState, Input, SectionHeader } from "@/components/ui";
+import { Card, SectionHeader, Button } from "@/components/ui";
 
-function RegisterContent() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirect = sanitizeAuthRedirect(searchParams.get("redirect") || "/dashboard");
-  const supabase = createClient();
-  const configured = isSupabaseConfigured();
-  const fallbackReason = getLocalDevFallbackReason();
-
-  const handleRegister = async (event) => {
-    event.preventDefault();
-    setError(""); setSuccess(""); setLoading(true);
-    try {
-      if (!configured || !supabase) throw new Error("Le service de creation de compte n est pas disponible.");
-      if (password.length < 8) throw new Error("Le mot de passe doit contenir au moins 8 caracteres.");
-      if (!/[A-Z]/.test(password)) throw new Error("Le mot de passe doit contenir au moins une majuscule.");
-      if (!/[0-9]/.test(password)) throw new Error("Le mot de passe doit contenir au moins un chiffre.");
-      if (password !== confirmPassword) throw new Error("Les mots de passe ne correspondent pas.");
-      const emailRedirectTo = buildEmailRedirectUrl(redirect, window.location.origin);
-      if (!emailRedirectTo) throw new Error("L URL publique de l application est invalide. Definissez NEXT_PUBLIC_SITE_URL.");
-      const { data, error: signUpError } = await supabase.auth.signUp({ email: email.trim().toLowerCase(), password, options: { data: { display_name: displayName.trim() }, emailRedirectTo } });
-      if (signUpError) throw signUpError;
-      if (data.session) { router.push(redirect); router.refresh(); return; }
-      setSuccess("Compte cree. Verifiez votre email pour confirmer l inscription.");
-    } catch (registerError) { setError(getSupabaseAuthErrorMessage(registerError, "register")); }
-    finally { setLoading(false); }
-  };
-
+export default function RegisterPage() {
   return (
     <AppShell badge="Inscription" showSecondaryNav={false} padded={false}>
       <div className="cp-auth-shell">
         <div className="cp-auth-layout">
           <div className="cp-auth-card-wrap">
             <Card tone="elevated">
-              <SectionHeader eyebrow="Inscription" title="Créer votre espace de formation" description="Accédez aux simulateurs, au suivi de progression et au parcours de certification. Gratuit, sans engagement." style={{ marginBottom: 0 }} />
-              {!configured ? <ErrorState tone="info" title="Authentification indisponible" description={fallbackReason || "Supabase non configure."} style={{ marginTop: 16 }} /> : null}
-              {error ? <ErrorState description={error} style={{ marginTop: 16 }} /> : null}
-              {success ? <ErrorState tone="info" title="Inscription enregistree" description={success} style={{ marginTop: 16 }} /> : null}
-              <form onSubmit={handleRegister} style={{ marginTop: 22 }}>
-                <Input label="Prenom ou nom d usage" type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Lucas" required={configured} />
-                <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@dealer-school.com" required={configured} style={{ marginTop: 14 }} />
-                <Input label="Mot de passe" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="8 caracteres, 1 majuscule, 1 chiffre" required={configured} style={{ marginTop: 14 }} autoComplete="new-password" />
-                <Input label="Confirmer le mot de passe" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Retapez votre mot de passe" required={configured} style={{ marginTop: 14 }} autoComplete="new-password" />
-                <Button type="submit" block style={{ marginTop: 20, opacity: loading ? 0.75 : 1 }} disabled={loading || !configured}>{loading ? "Creation..." : configured ? "Creer mon espace" : "Configuration requise"}</Button>
-              </form>
-              <div className="cp-auth-note">Deja membre ? <Link href="/auth/login" className="cp-gold" style={{ fontWeight: 700, textDecoration: "none" }}>Se connecter</Link></div>
+              <SectionHeader
+                eyebrow="Inscription"
+                title="Acces sur invitation uniquement"
+                description="Les inscriptions sont actuellement fermees. Si vous disposez d'un compte de formation, connectez-vous ci-dessous."
+                style={{ marginBottom: 0 }}
+              />
+              <div style={{ marginTop: 24 }}>
+                <Button href="/auth/login" block>Se connecter</Button>
+              </div>
+              <div className="cp-auth-note" style={{ marginTop: 16 }}>
+                Besoin d&apos;un acces ? Contactez votre responsable de formation.
+              </div>
             </Card>
           </div>
         </div>
@@ -67,5 +29,3 @@ function RegisterContent() {
     </AppShell>
   );
 }
-
-export default function RegisterPage() { return <Suspense fallback={<div className="cp-shell" />}><RegisterContent /></Suspense>; }

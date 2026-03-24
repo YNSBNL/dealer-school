@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { useAuth } from "@/lib/auth-context";
 import { CATALOGUE_GAMES, GAME_FAMILY_LABELS } from "@/lib/game-registry";
-import { buildLoginHref, buildRegisterHref } from "@/lib/platform-access";
+import { buildLoginHref } from "@/lib/platform-access";
 import { Badge, Button, Card, SectionHeader, StatCard } from "@/components/ui";
 
 const FAMILIES = [
@@ -76,7 +76,7 @@ export default function GameCatalogue() {
                   <Button href={user ? selectedGame.route : buildLoginHref(selectedGame.route)}>
                     {user ? "Ouvrir le simulateur" : "Se connecter pour ouvrir"}
                   </Button>
-                  {!user ? <Button href={buildRegisterHref(selectedGame.route)} variant="secondary">Créer un compte</Button> : null}
+                  {!user ? <Button href={buildLoginHref(selectedGame.route)} variant="secondary">Se connecter</Button> : null}
                 </div>
               </Card>
             </div>
@@ -96,8 +96,8 @@ export default function GameCatalogue() {
               title="Tous les simulateurs disponibles"
               description="Six modules de formation procédurale. Chaque simulateur couvre la procédure complète d'un jeu de casino : annonces, paiements et gestion de table."
               action={
-                <Button href={user ? "/dashboard" : buildRegisterHref("/dashboard")} variant={user ? "secondary" : "primary"}>
-                  {user ? "Mon espace" : "Créer un compte"}
+                <Button href={user ? "/dashboard" : buildLoginHref("/dashboard")} variant={user ? "secondary" : "primary"}>
+                  {user ? "Mon espace" : "Se connecter"}
                 </Button>
               }
             />
@@ -119,7 +119,7 @@ export default function GameCatalogue() {
               </div>
               {!user ? (
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16 }}>
-                  <Button href={buildRegisterHref("/dashboard")}>Créer un compte</Button>
+                  <Button href={buildLoginHref("/dashboard")}>Se connecter</Button>
                   <Button href={buildLoginHref("/dashboard")} variant="ghost">Connexion</Button>
                 </div>
               ) : null}

@@ -18,7 +18,6 @@ const PUBLIC_ITEMS = [
   { href: "/", label: "Accueil" },
   { href: "/catalogue", label: "Catalogue" },
   { href: "/auth/login", label: "Connexion" },
-  { href: "/auth/register", label: "Creer un compte" },
 ];
 
 export default function SecondaryNav({ items = MEMBER_ITEMS, title = "Navigation produit" }) {

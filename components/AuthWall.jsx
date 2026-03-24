@@ -21,7 +21,7 @@ export default function AuthWall({ game = "ce simulateur", freeRounds = 3, round
         <span style={{ color: "#BFB9AD" }}>
           Mode découverte — <strong style={{ color: "#C9A84C" }}>{remaining} essai{remaining > 1 ? "s" : ""} gratuit{remaining > 1 ? "s" : ""}</strong> restant{remaining > 1 ? "s" : ""}
         </span>
-        <Link href="/auth/register" style={{
+        <Link href="/auth/login" style={{
           padding: "4px 12px",
           background: "rgba(201,168,76,0.1)",
           border: "1px solid rgba(201,168,76,0.2)",
@@ -31,7 +31,7 @@ export default function AuthWall({ game = "ce simulateur", freeRounds = 3, round
           fontWeight: 600,
           textDecoration: "none",
         }}>
-          Créer un compte
+          Se connecter
         </Link>
       </div>
     );
@@ -80,11 +80,11 @@ export default function AuthWall({ game = "ce simulateur", freeRounds = 3, round
             lineHeight: 1.7,
             marginBottom: 28,
           }}>
-            Vos {freeRounds} essais gratuits sont terminés. Créez un compte gratuit pour continuer à vous entraîner et suivre votre progression.
+            Vos {freeRounds} essais gratuits sont terminés. Connectez-vous pour continuer à vous entraîner et suivre votre progression.
           </p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <Link href="/auth/register" style={{
+            <Link href="/auth/login" style={{
               padding: "14px 32px",
               background: "#C9A84C",
               color: "#0A0A0A",
@@ -96,21 +96,7 @@ export default function AuthWall({ game = "ce simulateur", freeRounds = 3, round
               textDecoration: "none",
               display: "block",
             }}>
-              Créer un compte gratuit
-            </Link>
-            
-            <Link href="/auth/login" style={{
-              padding: "12px 32px",
-              background: "transparent",
-              border: "1px solid rgba(255,255,255,0.12)",
-              color: "#BFB9AD",
-              borderRadius: 3,
-              fontSize: 12,
-              fontWeight: 500,
-              textDecoration: "none",
-              display: "block",
-            }}>
-              Déjà un compte ? Se connecter
+              Se connecter
             </Link>
           </div>
 

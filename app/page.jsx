@@ -2,7 +2,7 @@
 
 import AppShell from "@/components/AppShell";
 import { useAuth } from "@/lib/auth-context";
-import { buildProtectedHref, buildRegisterHref } from "@/lib/platform-access";
+import { buildLoginHref, buildProtectedHref } from "@/lib/platform-access";
 import { Badge, Button, Card, SectionHeader } from "@/components/ui";
 
 // ── Vrais modules disponibles ────────────────────────────────────────────────
@@ -145,7 +145,7 @@ function HeroSection({ user }) {
           </p>
 
           <div className="cp-hero-cta">
-            <Button href={user ? "/dashboard" : buildRegisterHref("/dashboard")}>
+            <Button href={user ? "/dashboard" : buildLoginHref("/dashboard")}>
               {user ? "Mon espace de formation" : "Créer un espace membre"}
             </Button>
             <Button href="#simulateurs" variant="ghost">
@@ -260,7 +260,7 @@ export default function Home() {
           ))}
         </div>
         <div style={{ marginTop: 24 }}>
-          <Button href={user ? "/certification" : buildRegisterHref("/certification")}>
+          <Button href={user ? "/certification" : buildLoginHref("/certification")}>
             {user ? "Voir mon parcours de certification" : "Commencer le parcours"}
           </Button>
         </div>
@@ -277,7 +277,7 @@ export default function Home() {
               Gratuit, sans engagement.
             </p>
             <div style={{ marginTop: 28 }}>
-              <Button href={user ? "/dashboard" : buildRegisterHref("/dashboard")}>
+              <Button href={user ? "/dashboard" : buildLoginHref("/dashboard")}>
                 {user ? "Accéder à mon espace" : "Créer un compte gratuitement"}
               </Button>
             </div>

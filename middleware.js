@@ -67,13 +67,32 @@ export async function middleware(request) {
 
     // Admin route: check role in profiles table
     if (isAdminRoute && user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
+      let isAdmin = false;
 
-      if (profile?.role !== "admin") {
+      // Try service role client first (bypasses RLS, most reliable)
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (serviceKey) {
+        const { createClient: createServiceClient } = await import("@supabase/supabase-js");
+        const adminClient = createServiceClient(SUPABASE_URL, serviceKey, {
+          auth: { autoRefreshToken: false, persistSession: false },
+        });
+        const { data: profile } = await adminClient
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        isAdmin = profile?.role === "admin";
+      } else {
+        // Fallback: use user session (requires RLS to allow reading own profile)
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        isAdmin = profile?.role === "admin";
+      }
+
+      if (!isAdmin) {
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }
     }

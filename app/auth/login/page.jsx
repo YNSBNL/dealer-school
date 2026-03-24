@@ -27,7 +27,7 @@ function LoginContent() {
     setLoading(true);
     try {
       if (!configured || !supabase) throw new Error("Le service de connexion n est pas disponible.");
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
       if (signInError) throw signInError;
       router.push(redirect);
       router.refresh();

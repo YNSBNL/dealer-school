@@ -11,6 +11,7 @@ import { Button, Card, ErrorState, Input, SectionHeader } from "@/components/ui"
 function RegisterContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -27,10 +28,13 @@ function RegisterContent() {
     setError(""); setSuccess(""); setLoading(true);
     try {
       if (!configured || !supabase) throw new Error("Le service de creation de compte n est pas disponible.");
-      if (password.length < 6) throw new Error("Le mot de passe doit contenir au moins 6 caracteres.");
+      if (password.length < 8) throw new Error("Le mot de passe doit contenir au moins 8 caracteres.");
+      if (!/[A-Z]/.test(password)) throw new Error("Le mot de passe doit contenir au moins une majuscule.");
+      if (!/[0-9]/.test(password)) throw new Error("Le mot de passe doit contenir au moins un chiffre.");
+      if (password !== confirmPassword) throw new Error("Les mots de passe ne correspondent pas.");
       const emailRedirectTo = buildEmailRedirectUrl(redirect, window.location.origin);
       if (!emailRedirectTo) throw new Error("L URL publique de l application est invalide. Definissez NEXT_PUBLIC_SITE_URL.");
-      const { data, error: signUpError } = await supabase.auth.signUp({ email, password, options: { data: { display_name: displayName.trim() }, emailRedirectTo } });
+      const { data, error: signUpError } = await supabase.auth.signUp({ email: email.trim().toLowerCase(), password, options: { data: { display_name: displayName.trim() }, emailRedirectTo } });
       if (signUpError) throw signUpError;
       if (data.session) { router.push(redirect); router.refresh(); return; }
       setSuccess("Compte cree. Verifiez votre email pour confirmer l inscription.");
@@ -51,7 +55,8 @@ function RegisterContent() {
               <form onSubmit={handleRegister} style={{ marginTop: 22 }}>
                 <Input label="Prenom ou nom d usage" type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Lucas" required={configured} />
                 <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@dealer-school.com" required={configured} style={{ marginTop: 14 }} />
-                <Input label="Mot de passe" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="6 caracteres minimum" required={configured} style={{ marginTop: 14 }} />
+                <Input label="Mot de passe" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="8 caracteres, 1 majuscule, 1 chiffre" required={configured} style={{ marginTop: 14 }} autoComplete="new-password" />
+                <Input label="Confirmer le mot de passe" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Retapez votre mot de passe" required={configured} style={{ marginTop: 14 }} autoComplete="new-password" />
                 <Button type="submit" block style={{ marginTop: 20, opacity: loading ? 0.75 : 1 }} disabled={loading || !configured}>{loading ? "Creation..." : configured ? "Creer mon espace" : "Configuration requise"}</Button>
               </form>
               <div className="cp-auth-note">Deja membre ? <Link href="/auth/login" className="cp-gold" style={{ fontWeight: 700, textDecoration: "none" }}>Se connecter</Link></div>

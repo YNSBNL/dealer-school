@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { isSupabaseConfigured } from "@/lib/config";
-import { computeProfileFromXp, computeXpGain, validateSessionPayload } from "@/lib/validation";
+import { computeCertification, computeProfileFromXp, computeXpGain, validateProgressPayload, validateSessionPayload } from "@/lib/validation";
 
 function unauthorized() { return NextResponse.json({ error: "Authentification requise" }, { status: 401 }); }
 
@@ -43,6 +43,9 @@ export async function POST(request) {
   const aa = Math.round((((existing?.accuracy || 0) * (sc - 1)) + payload.accuracy) / sc);
   const np = Math.min(100, Math.max(existing?.progress || 0, Math.round((payload.accuracy * 0.6) + Math.min(sc * 3, 30))));
   const bs = Math.max(existing?.best_streak || 0, payload.rounds_correct || 0);
-  await fetch(`${new URL("/api/progress", request.url).toString()}`, { method: "POST", headers: { "Content-Type": "application/json", cookie: request.headers.get("cookie") || "" }, body: JSON.stringify({ game_id: payload.game_id, progress: np, accuracy: aa, sessions_count: sc, best_streak: bs }) }).catch(() => null);
+  const progressPayload = { game_id: payload.game_id, progress: np, accuracy: aa, sessions_count: sc, best_streak: bs };
+  const certification = computeCertification(progressPayload);
+  await supabase.from("game_progress").upsert({ user_id: user.id, game_id: payload.game_id, progress: np, accuracy: aa, sessions_count: sc, best_streak: bs, total_score: Math.round(np * sc), certified: certification.certified, cert_level: certification.cert_level, unlocked: true, updated_at: createdAt }, { onConflict: "user_id,game_id" }).catch(() => null);
+  if (certification.certified && certification.cert_level) { await supabase.from("certifications").upsert({ user_id: user.id, cert_level: certification.cert_level, game_id: payload.game_id, earned_at: createdAt, exam_score: aa }, { onConflict: "user_id,cert_level,game_id" }).catch(() => null); }
   return NextResponse.json({ success: true, session, xp_gained: xpGained });
 }

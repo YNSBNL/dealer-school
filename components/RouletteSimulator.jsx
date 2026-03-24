@@ -1,965 +1,358 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { saveSession } from "@/lib/api";
+import { useState, useRef } from "react";
 import SimulatorHeader from "@/components/SimulatorHeader";
-import { buildRound as buildRouletteRound } from "@/features/roulette/engine";
-import { ROULETTE_ROWS } from "@/features/roulette/rulesets";
 
-// ============================================================
-// ROULETTE DATA
-// ============================================================
-const RED_NUMBERS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-const BLACK_NUMBERS = [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
+// ── DATA ──
+const RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const WHEEL=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+const VOISINS_NUMS=new Set([22,18,29,7,28,12,35,3,26,0,32,15,19,4,21,2,25]);
+const TIERS_NUMS=new Set([27,13,36,11,30,8,23,10,5,24,16,33]);
+const ORPH_NUMS=new Set([17,34,6,1,20,14,31,9]);
+const VOISINS_BETS=[{t:"trio",n:[0,2,3],c:2},{t:"cheval",n:[4,7],c:1},{t:"cheval",n:[12,15],c:1},{t:"cheval",n:[18,21],c:1},{t:"cheval",n:[19,22],c:1},{t:"carre",n:[25,26,28,29],c:2},{t:"cheval",n:[32,35],c:1}];
+const TIERS_BETS=[{t:"cheval",n:[5,8],c:1},{t:"cheval",n:[10,11],c:1},{t:"cheval",n:[13,16],c:1},{t:"cheval",n:[23,24],c:1},{t:"cheval",n:[27,30],c:1},{t:"cheval",n:[33,36],c:1}];
+const ORPH_BETS=[{t:"plein",n:[1],c:1},{t:"cheval",n:[6,9],c:1},{t:"cheval",n:[14,17],c:1},{t:"cheval",n:[17,20],c:1},{t:"cheval",n:[31,34],c:1}];
 
-const BET_TYPES = {
-  straight: { name: "Plein", payout: 35, description: "Un seul numéro" },
-  split: { name: "Cheval", payout: 17, description: "2 numéros adjacents" },
-  street: { name: "Transversale", payout: 11, description: "3 numéros en ligne" },
-  corner: { name: "Carré", payout: 8, description: "4 numéros en carré" },
-  sixLine: { name: "Sixain", payout: 5, description: "6 numéros (2 lignes)" },
-  dozen: { name: "Douzaine", payout: 2, description: "12 numéros" },
-  column: { name: "Colonne", payout: 2, description: "12 numéros" },
-  red: { name: "Rouge", payout: 1, description: "18 numéros rouges" },
-  black: { name: "Noir", payout: 1, description: "18 numéros noirs" },
-  even: { name: "Pair", payout: 1, description: "Numéros pairs" },
-  odd: { name: "Impair", payout: 1, description: "Numéros impairs" },
-  low: { name: "Manque (1-18)", payout: 1, description: "1 à 18" },
-  high: { name: "Passe (19-36)", payout: 1, description: "19 à 36" },
-};
-
-const CHIP_VALUES = [1, 5, 10, 25, 100];
-const CHIP_COLORS = { 1: "#FFFFFF", 5: "#E53935", 10: "#1565C0", 25: "#2E7D46", 100: "#1A1A1A" };
-const CHIP_TEXT = { 1: "#333", 5: "#FFF", 10: "#FFF", 25: "#FFF", 100: "#C9A84C" };
-
-// ============================================================
-// HELPERS
-// ============================================================
-function getNumberColor(n) {
-  if (n === 0) return "green";
-  if (RED_NUMBERS.includes(n)) return "red";
-  return "black";
-}
-
-function isWinningBet(bet, winningNumber) {
-  const n = winningNumber;
-  switch (bet.type) {
-    case "straight": return bet.numbers.includes(n);
-    case "split": return bet.numbers.includes(n);
-    case "street": return bet.numbers.includes(n);
-    case "corner": return bet.numbers.includes(n);
-    case "sixLine": return bet.numbers.includes(n);
-    case "dozen": return bet.numbers.includes(n);
-    case "column": return bet.numbers.includes(n);
-    case "red": return RED_NUMBERS.includes(n);
-    case "black": return BLACK_NUMBERS.includes(n);
-    case "even": return n > 0 && n % 2 === 0;
-    case "odd": return n > 0 && n % 2 === 1;
-    case "low": return n >= 1 && n <= 18;
-    case "high": return n >= 19 && n <= 36;
-    default: return false;
+function genPicture(){
+  const row=1+Math.floor(Math.random()*10);
+  const col=Math.floor(Math.random()*3);
+  const winNum=row*3+(3-col);
+  const baseRow=row-1;
+  const nums=[];
+  for(let r=0;r<3;r++){
+    const rr=[];
+    for(let c=0;c<3;c++){
+      const n=(baseRow+r)*3+(3-c);
+      rr.push(n>0&&n<=36?n:null);
+    }
+    nums.push(rr);
   }
+  const wr=1,wc=col;
+  const CW=1/3,CH=1/3;
+  const cx=(wc+0.5)*CW, cy=(wr+0.5)*CH;
+  const allPos=[];
+  allPos.push({id:"plein",type:"plein",pay:35,x:cx,y:cy});
+  if(wr>0)allPos.push({id:"ch_t",type:"cheval",pay:17,x:cx,y:wr*CH});
+  if(wr<2)allPos.push({id:"ch_b",type:"cheval",pay:17,x:cx,y:(wr+1)*CH});
+  if(wc>0)allPos.push({id:"ch_l",type:"cheval",pay:17,x:wc*CW,y:cy});
+  if(wc<2)allPos.push({id:"ch_r",type:"cheval",pay:17,x:(wc+1)*CW,y:cy});
+  if(wr>0&&wc>0)allPos.push({id:"ca_tl",type:"carre",pay:8,x:wc*CW,y:wr*CH});
+  if(wr>0&&wc<2)allPos.push({id:"ca_tr",type:"carre",pay:8,x:(wc+1)*CW,y:wr*CH});
+  if(wr<2&&wc>0)allPos.push({id:"ca_bl",type:"carre",pay:8,x:wc*CW,y:(wr+1)*CH});
+  if(wr<2&&wc<2)allPos.push({id:"ca_br",type:"carre",pay:8,x:(wc+1)*CW,y:(wr+1)*CH});
+  allPos.push({id:"trans",type:"transversale",pay:11,x:0,y:cy});
+  if(wr>0)allPos.push({id:"six_t",type:"sixain",pay:5,x:0,y:wr*CH});
+  if(wr<2)allPos.push({id:"six_b",type:"sixain",pay:5,x:0,y:(wr+1)*CH});
+  const count=2+Math.floor(Math.random()*Math.min(8,allPos.length));
+  const shuffled=[...allPos];
+  for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
+  const picked=shuffled.slice(0,count);
+  const chips=picked.map(p=>({...p,stack:1+Math.floor(Math.random()*5)}));
+  const pay=chips.reduce((s,c)=>s+c.pay*c.stack,0);
+  return{nums,chips,pay,winNum,wr,wc};
 }
 
-function calculateTotalPayout(bets, winningNumber) {
-  let total = 0;
-  bets.forEach(bet => {
-    if (isWinningBet(bet, winningNumber)) {
-      total += bet.amount * BET_TYPES[bet.type].payout + bet.amount;
-    }
-  });
-  return total;
+function genExo(){
+  const types=["plein","plein","cheval","cheval","transversale","carre","sixain","rouge","noir","pair","impair","manque","passe","dz1","dz2","dz3","col1","col2","col3"];
+  const t=types[Math.floor(Math.random()*types.length)];
+  if(t==="plein"){const n=Math.floor(Math.random()*37);return{type:t,key:`${n}`,label:`Plein ${n}`};}
+  if(["rouge","noir","pair","impair","manque","passe","dz1","dz2","dz3","col1","col2","col3"].includes(t))return{type:t,key:t,label:{rouge:"Rouge",noir:"Noir",pair:"Pair",impair:"Impair",manque:"Manque",passe:"Passe",dz1:"1ere Douzaine",dz2:"2eme Douzaine",dz3:"3eme Douzaine",col1:"Colonne 1",col2:"Colonne 2",col3:"Colonne 3"}[t]};
+  if(t==="cheval"){const ch=[];for(let r=0;r<12;r++)for(let c=0;c<3;c++){const n=r*3+c+1;if(c<2)ch.push([n,n+1]);if(r<11)ch.push([n,n+3]);}ch.push([0,1],[0,2],[0,3]);const p=ch[Math.floor(Math.random()*ch.length)];return{type:t,key:p.join(","),label:`Cheval ${p.join("-")}`,nums:p};}
+  if(t==="transversale"){const r=Math.floor(Math.random()*12);const b=r*3+1;return{type:t,key:`${b},${b+1},${b+2}`,label:`Transversale ${b}-${b+2}`,nums:[b,b+1,b+2]};}
+  if(t==="carre"){const r=Math.floor(Math.random()*11);const c=Math.floor(Math.random()*2);const n=r*3+c+1;return{type:t,key:[n,n+1,n+3,n+4].join(","),label:`Carre ${n}-${n+4}`,nums:[n,n+1,n+3,n+4]};}
+  if(t==="sixain"){const r=Math.floor(Math.random()*11);const b=r*3+1;return{type:t,key:[b,b+1,b+2,b+3,b+4,b+5].join(","),label:`Sixain ${b}-${b+5}`,nums:[b,b+1,b+2,b+3,b+4,b+5]};}
+  return{type:"plein",key:"0",label:"Plein 0"};
 }
 
-function generateRandomBets(difficulty) {
-  const bets = [];
-  const numBets = difficulty <= 1 ? 1 : difficulty <= 3 ? Math.floor(Math.random() * 2) + 2 : Math.floor(Math.random() * 3) + 3;
-
-  const availableTypes = difficulty <= 1
-    ? ["straight", "red", "black", "even", "odd"]
-    : difficulty <= 3
-    ? ["straight", "split", "street", "dozen", "column", "red", "black", "even", "odd", "low", "high"]
-    : Object.keys(BET_TYPES);
-
-  for (let i = 0; i < numBets; i++) {
-    const type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
-    const chipVal = CHIP_VALUES[Math.floor(Math.random() * Math.min(difficulty + 1, CHIP_VALUES.length))];
-    const amount = chipVal * (Math.floor(Math.random() * 3) + 1);
-    let numbers = [];
-
-    switch (type) {
-      case "straight": {
-        const n = Math.floor(Math.random() * 37);
-        numbers = [n];
-        break;
-      }
-      case "split": {
-        const row = Math.floor(Math.random() * 3);
-        const col = Math.floor(Math.random() * 11);
-        const n1 = row + col * 3 + 1;
-        const n2 = n1 + (Math.random() > 0.5 && row < 2 ? 1 : 3);
-        if (n2 <= 36) numbers = [n1, n2]; else numbers = [n1, n1 - 1];
-        break;
-      }
-      case "street": {
-        const col = Math.floor(Math.random() * 12);
-        numbers = [col * 3 + 1, col * 3 + 2, col * 3 + 3];
-        break;
-      }
-      case "corner": {
-        const row = Math.floor(Math.random() * 2);
-        const col = Math.floor(Math.random() * 11);
-        const base = row + col * 3 + 1;
-        numbers = [base, base + 1, base + 3, base + 4];
-        break;
-      }
-      case "sixLine": {
-        const col = Math.floor(Math.random() * 11);
-        const base = col * 3 + 1;
-        numbers = [base, base+1, base+2, base+3, base+4, base+5];
-        break;
-      }
-      case "dozen": {
-        const d = Math.floor(Math.random() * 3);
-        numbers = Array.from({length: 12}, (_, i) => d * 12 + i + 1);
-        break;
-      }
-      case "column": {
-        const c = Math.floor(Math.random() * 3);
-        numbers = Array.from({length: 12}, (_, i) => c + 1 + i * 3);
-        break;
-      }
-      default:
-        numbers = [];
-    }
-
-    bets.push({ type, amount, numbers, id: `bet-${i}` });
-  }
-  return bets;
+function genHipExo(){
+  const sectors=[{name:"Voisins du Zero",bets:VOISINS_BETS},{name:"Tiers du Cylindre",bets:TIERS_BETS},{name:"Orphelins",bets:ORPH_BETS}];
+  const s=sectors[Math.floor(Math.random()*3)];const b=s.bets[Math.floor(Math.random()*s.bets.length)];
+  const label=b.t==="plein"?`Plein ${b.n[0]}`:b.t==="trio"?`Trio ${b.n.join("-")}`:b.t==="carre"?`Carre ${b.n.join("-")}`:`Cheval ${b.n.join("-")}`;
+  return{sectorName:s.name,bet:b,label,key:b.n.sort((a,c)=>a-c).join(",")};
 }
 
-function generateWinningNumber() {
-  return Math.floor(Math.random() * 37);
-}
+// ── MAIN ──
+export default function RouletteSimulator(){
+  const [screen,setScreen]=useState("menu");
+  const [mode,setMode]=useState(1);
+  const [stats,setStats]=useState({ok:0,total:0,rounds:0});
+  const [exo,setExo]=useState(null);const [wrong,setWrong]=useState(false);const [sel,setSel]=useState(new Set());
+  const [hipExo,setHipExo]=useState(null);const [hipWrong,setHipWrong]=useState(false);const [hipSel,setHipSel]=useState(new Set());
+  const [pic,setPic]=useState(null);const [picInput,setPicInput]=useState("");const [picWrong,setPicWrong]=useState(false);
+  const picRef=useRef(null);
 
-// ============================================================
-// COMPONENTS
-// ============================================================
+  const start1=()=>{setExo(genExo());setWrong(false);setSel(new Set());setScreen("game");};
+  const start2=()=>{setHipExo(genHipExo());setHipWrong(false);setHipSel(new Set());setScreen("game");};
+  const start3=()=>{setPic(genPicture());setPicInput("");setPicWrong(false);setScreen("game");setTimeout(()=>picRef.current?.focus(),200);};
 
-function Chip({ value, size = 28, style = {} }) {
-  return (
-    <div style={{
-      width: size, height: size, borderRadius: "50%",
-      background: CHIP_COLORS[value] || "#C9A84C",
-      color: CHIP_TEXT[value] || "#000",
-      border: `2px solid rgba(201,168,76,0.5)`,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: size * 0.38, fontWeight: 800,
-      boxShadow: "0 2px 8px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.15)",
-      fontFamily: "'DM Sans', sans-serif",
-      ...style
-    }}>
-      {value}
-    </div>
-  );
-}
+  const check=(key)=>{if(key===exo.key){setWrong(false);setStats(s=>({...s,ok:s.ok+1,total:s.total+1,rounds:s.rounds+1}));setTimeout(()=>{setExo(genExo());setSel(new Set());setWrong(false);},400);}else{setWrong(true);setStats(s=>({...s,total:s.total+1}));setSel(new Set());}};
+  const hipCheck=(key)=>{if(key===hipExo.key){setHipWrong(false);setStats(s=>({...s,ok:s.ok+1,total:s.total+1,rounds:s.rounds+1}));setTimeout(()=>{setHipExo(genHipExo());setHipSel(new Set());setHipWrong(false);},400);}else{setHipWrong(true);setStats(s=>({...s,total:s.total+1}));setHipSel(new Set());}};
+  const picSubmit=()=>{const v=parseInt(picInput);if(isNaN(v))return;if(v===pic.pay){setStats(s=>({...s,ok:s.ok+1,total:s.total+1,rounds:s.rounds+1}));setPicWrong(false);setPicInput("");setTimeout(()=>{setPic(genPicture());setTimeout(()=>picRef.current?.focus(),100);},400);}else{setPicWrong(true);setPicInput("");setStats(s=>({...s,total:s.total+1}));setTimeout(()=>picRef.current?.focus(),100);}};
 
-function NumberCell({ number, highlighted, onClick }) {
-  const color = getNumberColor(number);
-  const bg = color === "red" ? "#C62828" : color === "black" ? "#1a1a1a" : "#1B5E32";
-  const isHighlighted = highlighted;
+  const statsText = stats.total>0?`${Math.round(stats.ok/stats.total*100)}% · R${stats.rounds+1}`:`R1`;
 
-  return (
-    <div
-      onClick={() => onClick?.(number)}
-      style={{
-        background: bg,
-        border: isHighlighted ? "2px solid #E8D48B" : "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 3,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontFamily: "'Playfair Display', serif",
-        fontWeight: 700, fontSize: 13,
-        color: isHighlighted ? "#E8D48B" : "#fff",
-        cursor: "pointer",
-        transition: "all 0.2s ease",
-        position: "relative",
-        boxShadow: isHighlighted ? "0 0 12px rgba(201,168,76,0.3)" : "none",
-        transform: isHighlighted ? "scale(1.08)" : "scale(1)",
-        minHeight: 36,
-      }}
-    >
-      {number}
-    </div>
-  );
-}
-
-// ============================================================
-// MAIN APP
-// ============================================================
-export default function RouletteSimulator() {
-  const [screen, setScreen] = useState("menu"); // menu, training, result, review
-  const [difficulty, setDifficulty] = useState(1);
-  const [bets, setBets] = useState([]);
-  const [winningNumber, setWinningNumber] = useState(null);
-  const [userAnswer, setUserAnswer] = useState("");
-  const [correctAnswer, setCorrectAnswer] = useState(0);
-  const [score, setScore] = useState(0);
-  const [streak, setStreak] = useState(0);
-  const [bestStreak, setBestStreak] = useState(0);
-  const [round, setRound] = useState(0);
-  const [totalRounds, setTotalRounds] = useState(0);
-  const [correctRounds, setCorrectRounds] = useState(0);
-  const [timer, setTimer] = useState(0);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [history, setHistory] = useState([]);
-  const [showHint, setShowHint] = useState(false);
-  const [viewportWidth, setViewportWidth] = useState(1440);
-  const inputRef = useRef(null);
-
-  // Timer
-  useEffect(() => {
-    let interval;
-    if (isTimerRunning) {
-      interval = setInterval(() => setTimer(t => t + 1), 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isTimerRunning]);
-
-  useEffect(() => {
-    const updateViewport = () => setViewportWidth(window.innerWidth || 1440);
-    updateViewport();
-    window.addEventListener("resize", updateViewport);
-    return () => window.removeEventListener("resize", updateViewport);
-  }, []);
-
-  const startRound = useCallback(() => {
-    const { bets: newBets, winningNumber: newWin, correctAnswer: correct } = buildRouletteRound(difficulty);
-
-    setBets(newBets);
-    setWinningNumber(newWin);
-    setCorrectAnswer(correct);
-    setUserAnswer("");
-    setShowHint(false);
-    setScreen("training");
-    setTimer(0);
-    setIsTimerRunning(true);
-    setRound(r => r + 1);
-
-    setTimeout(() => inputRef.current?.focus(), 100);
-  }, [difficulty]);
-
-  const submitAnswer = () => {
-    setIsTimerRunning(false);
-    const userNum = parseInt(userAnswer) || 0;
-    const isCorrect = userNum === correctAnswer;
-    const timeBonus = Math.max(0, 30 - timer) * 2;
-    const roundScore = isCorrect ? 100 + timeBonus : 0;
-    const nextTotalRounds = totalRounds + 1;
-    const nextCorrectRounds = correctRounds + (isCorrect ? 1 : 0);
-    const nextAccuracy = nextTotalRounds > 0 ? Math.round((nextCorrectRounds / nextTotalRounds) * 100) : 0;
-
-    setScore(s => s + roundScore);
-    setTotalRounds(nextTotalRounds);
-    if (isCorrect) {
-      setCorrectRounds(nextCorrectRounds);
-      setStreak(s => {
-        const ns = s + 1;
-        if (ns > bestStreak) setBestStreak(ns);
-        return ns;
-      });
-    } else {
-      setStreak(0);
-    }
-
-    setHistory(h => [...h, {
-      round: round,
-      bets: bets,
-      winningNumber,
-      correctAnswer,
-      userAnswer: userNum,
-      isCorrect,
-      time: timer,
-      score: roundScore,
-    }]);
-
-    saveSession({
-      game_id: "roulette",
-      mode: difficulty >= 4 ? "examen" : difficulty >= 2 ? "simulation" : "guidee",
-      score: roundScore,
-      accuracy: nextAccuracy,
-      duration_seconds: timer,
-      rounds_played: 1,
-      rounds_correct: isCorrect ? 1 : 0,
-      errors: isCorrect ? [] : [`Réponse donnée: ${userNum}`],
-      details: {
-        difficulty,
-        winningNumber,
-        correctAnswer,
-        userAnswer: userNum,
-        bets: bets.map((bet) => ({ type: bet.type, amount: bet.amount, numbers: bet.numbers })),
-      },
-    }).catch(() => null);
-
-    setScreen("result");
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && userAnswer.length > 0) submitAnswer();
-  };
-
-  const getHighlightedNumbers = () => {
-    const nums = new Set();
-    bets.forEach(bet => {
-      if (isWinningBet(bet, winningNumber)) {
-        bet.numbers.forEach(n => nums.add(n));
-        if (bet.type === "red") RED_NUMBERS.forEach(n => nums.add(n));
-        if (bet.type === "black") BLACK_NUMBERS.forEach(n => nums.add(n));
-        if (bet.type === "even") { for(let i=2;i<=36;i+=2) nums.add(i); }
-        if (bet.type === "odd") { for(let i=1;i<=36;i+=2) nums.add(i); }
-        if (bet.type === "low") { for(let i=1;i<=18;i++) nums.add(i); }
-        if (bet.type === "high") { for(let i=19;i<=36;i++) nums.add(i); }
-      }
-    });
-    return nums;
-  };
-
-  const winColor = winningNumber !== null ? getNumberColor(winningNumber) : "green";
-  const isMobile = viewportWidth < 640;
-  const isTablet = viewportWidth >= 640 && viewportWidth < 1024;
-  const isDesktopWide = viewportWidth >= 1440;
-  const tableLead = isMobile ? 30 : isDesktopWide ? 52 : viewportWidth >= 1024 ? 44 : 38;
-  const tableCellHeight = isMobile ? 30 : isDesktopWide ? 46 : viewportWidth >= 1024 ? 40 : 36;
-
-  // ============================================================
-  // STYLES
-  // ============================================================
-  const styles = {
-    app: {
-      minHeight: "100vh",
-      background: "var(--sim-bg)",
-      color: "var(--sim-text)",
-      fontFamily: "'DM Sans', sans-serif",
-      position: "relative",
-    },
-    noise: {
-      position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
-      opacity: 0.025, pointerEvents: "none", zIndex: 9999,
-      backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-    },
-    header: {
-      padding: "20px 32px",
-      display: "flex", justifyContent: "space-between", alignItems: "center",
-      borderBottom: "1px solid var(--sim-border)",
-      background: "var(--sim-surface-2)",
-      backdropFilter: "blur(10px)",
-    },
-    logo: {
-      fontFamily: "'Playfair Display', serif",
-      fontSize: 22, fontWeight: 900,
-    },
-    logoAccent: { color: "#C9A84C" },
-    headerBadge: {
-      padding: "6px 16px",
-      border: "1px solid rgba(201,168,76,0.25)",
-      borderRadius: 50, fontSize: 11, fontWeight: 600,
-      letterSpacing: "0.12em", textTransform: "uppercase",
-      color: "#C9A84C",
-    },
-    main: {
-      width: "min(1680px, calc(100% - 24px))", margin: "0 auto", padding: isMobile ? "24px 0 28px" : "40px 0 32px",
-    },
-    // Menu
-    menuWrap: {
-      display: "flex", flexDirection: "column", alignItems: "center",
-      justifyContent: "center", minHeight: "70vh", gap: viewportWidth < 640 ? 24 : 40,
-    },
-    menuTitle: {
-      fontFamily: "'Playfair Display', serif",
-      fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 900,
-      textAlign: "center", lineHeight: 1.15,
-    },
-    menuSub: {
-      fontSize: 15, color: "var(--sim-muted)", fontWeight: 300,
-      textAlign: "center", maxWidth: 500, lineHeight: 1.7,
-    },
-    diffGrid: {
-      display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(78px, 1fr))",
-      gap: 10, maxWidth: 620, width: "100%",
-    },
-    diffBtn: (active) => ({
-      padding: "16px 10px",
-      background: active ? "rgba(201,168,76,0.12)" : "var(--sim-surface)",
-      border: active ? "2px solid #C9A84C" : "1px solid var(--sim-border)",
-      borderRadius: 4, cursor: "pointer",
-      textAlign: "center", transition: "all 0.2s ease",
-      color: active ? "#C9A84C" : "var(--sim-muted)",
-    }),
-    diffNum: {
-      fontFamily: "'Playfair Display', serif",
-      fontSize: 24, fontWeight: 900, lineHeight: 1,
-    },
-    diffLabel: {
-      fontSize: 10, textTransform: "uppercase",
-      letterSpacing: "0.1em", marginTop: 4, fontWeight: 500,
-    },
-    startBtn: {
-      padding: "16px 48px",
-      background: "#C9A84C", color: "#0A0A0A",
-      border: "none", borderRadius: 2,
-      fontSize: 14, fontWeight: 700,
-      letterSpacing: "0.1em", textTransform: "uppercase",
-      cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
-      transition: "all 0.3s ease",
-    },
-    // Training layout
-    trainingLayout: {
-      display: "grid",
-      gridTemplateColumns: viewportWidth < 1180 ? "1fr" : "minmax(0, 1.45fr) minmax(340px, 430px)",
-      gap: 28, alignItems: "start",
-    },
-    // Roulette table
-    tableWrap: {
-      background: "var(--sim-felt-3)",
-      borderRadius: 10, padding: isMobile ? 12 : isDesktopWide ? 28 : 20,
-      border: "2px solid var(--sim-border-strong)",
-      boxShadow: "inset 0 0 60px rgba(0,0,0,0.4), 0 20px 60px rgba(0,0,0,0.5)",
-      position: "relative",
-      overflow: "hidden",
-    },
-    tableGlow: {
-      position: "absolute", top: "30%", left: "50%",
-      transform: "translate(-50%, -50%)",
-      width: 400, height: 300, borderRadius: "50%",
-      background: "radial-gradient(ellipse, rgba(46,125,70,0.3), transparent 70%)",
-      pointerEvents: "none",
-    },
-    tableGrid: {
-      display: "grid",
-      gridTemplateColumns: `${tableLead}px repeat(12, minmax(0, 1fr))`,
-      gridTemplateRows: `repeat(3, ${tableCellHeight}px)`,
-      gap: isMobile ? 2 : isDesktopWide ? 4 : 3, position: "relative", zIndex: 1,
-    },
-    zeroCell: {
-      gridColumn: "1", gridRow: "1 / 4",
-      background: "var(--sim-felt)",
-      border: "1px solid var(--sim-border-strong)",
-      borderRadius: 3,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontFamily: "'Playfair Display', serif",
-      fontWeight: 700, fontSize: isMobile ? 13 : isDesktopWide ? 18 : 16, color: "#E8D48B",
-    },
-    outsideBets: {
-      display: "grid",
-      gridTemplateColumns: `${tableLead}px repeat(12, minmax(0, 1fr))`,
-      gap: isMobile ? 2 : isDesktopWide ? 4 : 3, marginTop: 3, position: "relative", zIndex: 1,
-    },
-    dozenCell: {
-      gridColumn: "span 4",
-      background: "rgba(27,94,50,0.28)",
-      border: "1px solid var(--sim-border)",
-      borderRadius: 3, padding: isMobile ? "5px 0" : isDesktopWide ? "8px 0" : "6px 0",
-      textAlign: "center", fontSize: isMobile ? 8 : isDesktopWide ? 11 : 10,
-      fontWeight: 600, letterSpacing: "0.08em",
-      textTransform: "uppercase", color: "var(--sim-muted)",
-    },
-    evenMoneyRow: {
-      display: "grid",
-      gridTemplateColumns: `${tableLead}px repeat(6, minmax(0, 1fr))`,
-      gap: isMobile ? 2 : isDesktopWide ? 4 : 3, marginTop: 3, position: "relative", zIndex: 1,
-    },
-    evenMoneyCell: (type) => ({
-      padding: isMobile ? "6px 0" : isDesktopWide ? "10px 0" : "8px 0", textAlign: "center",
-      borderRadius: 3, fontSize: isMobile ? 8 : isDesktopWide ? 11 : 10,
-      fontWeight: 600, letterSpacing: "0.06em",
-      textTransform: "uppercase",
-      border: "1px solid var(--sim-border)",
-      background: type === "rouge" ? "rgba(198,40,40,0.35)"
-        : type === "noir" ? "rgba(26,26,26,0.6)"
-        : "rgba(27,94,50,0.3)",
-      color: "var(--sim-muted)",
-    }),
-    winBanner: {
-      display: "flex", alignItems: "center", justifyContent: "center",
-      gap: 12, margin: "16px 0 0",
-      padding: "12px 20px",
-      background: "color-mix(in srgb, var(--sim-surface) 84%, transparent)",
-      borderRadius: 4,
-      border: "1px solid var(--sim-border)",
-    },
-    winNum: (color) => ({
-      width: 44, height: 44, borderRadius: "50%",
-      background: color === "red" ? "#C62828" : color === "black" ? "#1a1a1a" : "#1B5E32",
-      border: "3px solid #C9A84C",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontFamily: "'Playfair Display', serif",
-      fontWeight: 900, fontSize: 18, color: "#fff",
-      boxShadow: "0 0 20px rgba(201,168,76,0.3)",
-    }),
-    // Side panel
-    sidePanel: {
-      display: "flex", flexDirection: "column", gap: 16,
-    },
-    card: {
-      background: "var(--sim-surface)",
-      border: "1px solid var(--sim-border)",
-      borderRadius: 4, padding: isMobile ? 16 : isDesktopWide ? 24 : 20,
-    },
-    cardTitle: {
-      fontFamily: "'Playfair Display', serif",
-      fontSize: 15, fontWeight: 700, marginBottom: 12,
-      display: "flex", alignItems: "center", gap: 8,
-    },
-    betRow: {
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "8px 0",
-      borderBottom: "1px solid rgba(255,255,255,0.04)",
-      fontSize: 13,
-    },
-    betType: { color: "#C9A84C", fontWeight: 600, fontSize: 12 },
-    betNums: { color: "var(--sim-muted)", fontSize: 11, fontWeight: 300 },
-    betAmount: { fontWeight: 700, fontSize: 14 },
-    betWin: { color: "#2E7D46", fontWeight: 700, fontSize: 11 },
-    betLose: { color: "#C62828", fontWeight: 700, fontSize: 11 },
-    // Input area
-    inputWrap: {
-      display: "grid", gap: viewportWidth < 640 ? 8 : 0,
-      gridTemplateColumns: viewportWidth < 640 ? "1fr" : "1fr auto",
-    },
-    input: {
-      flex: 1, padding: "14px 16px",
-      background: "color-mix(in srgb, var(--sim-surface) 90%, #000 10%)", color: "var(--sim-text)",
-      border: "1px solid var(--sim-border-strong)",
-      borderRight: viewportWidth < 640 ? "1px solid var(--sim-border-strong)" : "none",
-      borderRadius: viewportWidth < 640 ? 2 : "2px 0 0 2px",
-      fontSize: 18, fontWeight: 700,
-      fontFamily: "'DM Sans', sans-serif",
-      outline: "none",
-    },
-    submitBtn: {
-      padding: "14px 24px",
-      background: "#C9A84C", color: "#0A0A0A",
-      border: "none", borderRadius: viewportWidth < 640 ? 2 : "0 2px 2px 0",
-      fontSize: 13, fontWeight: 700,
-      letterSpacing: "0.08em", textTransform: "uppercase",
-      cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
-      whiteSpace: "nowrap",
-    },
-    // Timer
-    timerWrap: {
-      display: "flex", alignItems: "center", gap: 6,
-      fontSize: viewportWidth < 640 ? 11 : 13, color: "var(--sim-muted)", fontWeight: 500,
-    },
-    // Scores
-    scoreGrid: {
-      display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-      gap: 10,
-    },
-    scoreStat: {
-      textAlign: "center", padding: "10px 8px",
-      background: "rgba(201,168,76,0.08)",
-      borderRadius: 3,
-    },
-    scoreNum: {
-      fontFamily: "'Playfair Display', serif",
-      fontSize: 22, fontWeight: 900, color: "#C9A84C",
-      lineHeight: 1,
-    },
-    scoreLabel: {
-      fontSize: 9, textTransform: "uppercase",
-      letterSpacing: "0.1em", color: "#BFB9AD",
-      fontWeight: 500, marginTop: 3,
-    },
-    // Result
-    resultBig: (correct) => ({
-      fontSize: 14, fontWeight: 700,
-      letterSpacing: "0.15em", textTransform: "uppercase",
-      color: correct ? "#2E7D46" : "#C62828",
-      marginBottom: 8,
-    }),
-    resultPayout: {
-      fontFamily: "'Playfair Display', serif",
-      fontSize: 36, fontWeight: 900,
-      color: "#C9A84C", lineHeight: 1,
-    },
-    resultYours: (correct) => ({
-      fontSize: 14, color: correct ? "#2E7D46" : "#C62828",
-      fontWeight: 600, marginTop: 4,
-    }),
-    hintBtn: {
-      background: "none", border: "1px solid rgba(201,168,76,0.2)",
-      color: "#C9A84C", padding: "6px 14px",
-      borderRadius: 2, fontSize: 11, fontWeight: 600,
-      cursor: "pointer", letterSpacing: "0.05em",
-      fontFamily: "'DM Sans', sans-serif",
-    },
-    hintBox: {
-      background: "rgba(201,168,76,0.1)",
-      border: "1px solid var(--sim-border-strong)",
-      borderRadius: 4, padding: 14, marginTop: 10,
-      fontSize: 12, color: "var(--sim-muted)", lineHeight: 1.6,
-    },
-    nextBtn: {
-      width: "100%", padding: "14px",
-      background: "#C9A84C", color: "#0A0A0A",
-      border: "none", borderRadius: 2,
-      fontSize: 13, fontWeight: 700,
-      letterSpacing: "0.08em", textTransform: "uppercase",
-      cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
-      marginTop: 10,
-    },
-    backBtn: {
-      background: "none", border: "1px solid var(--sim-border)",
-      color: "var(--sim-muted)", padding: "10px 20px",
-      borderRadius: 2, fontSize: 12, fontWeight: 500,
-      cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
-    },
-    // Responsive override
-    mobileStack: {
-      display: "flex", flexDirection: "column", gap: 20,
-    },
-  };
-
-  // Build the roulette table rows
-  const highlightedNums = screen === "result" || screen === "training" ? getHighlightedNumbers() : new Set();
-
-  const betNumbersOnTable = new Set();
-  bets.forEach(b => b.numbers.forEach(n => betNumbersOnTable.add(n)));
-
-  const renderTable = () => (
-    <div style={styles.tableWrap}>
-      <div style={styles.tableGlow} />
-      
-      {/* Winning number banner */}
-      <div style={styles.winBanner}>
-        <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#BFB9AD" }}>
-          Numéro gagnant
-        </span>
-        <div style={styles.winNum(winColor)}>{winningNumber}</div>
-      </div>
-
-      {/* Main grid */}
-      <div style={{ marginTop: 16 }}>
-        <div style={styles.tableGrid}>
-          {/* Zero */}
-          <div style={styles.zeroCell}>0</div>
-          
-          {/* Numbers */}
-          {ROULETTE_ROWS.map((row) => 
-            row.map((num) => (
-              <NumberCell
-                key={num}
-                number={num}
-                highlighted={highlightedNums.has(num) || betNumbersOnTable.has(num)}
-              />
-            ))
-          )}
+  if(screen==="menu")return(
+    <div style={{minHeight:"100vh",background:"#080808",color:"#F5F0E8",fontFamily:"'DM Sans',sans-serif"}}>
+      <SimulatorHeader title="Roulette Anglaise" badge="Roulette Anglaise" />
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"82vh",gap:20}}>
+        <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(1.5rem,3.5vw,2.2rem)",fontWeight:900,margin:0}}>Roulette <span style={{color:"#C9A84C",fontStyle:"italic"}}>Anglaise</span></h1>
+        <div style={{display:"flex",gap:5,flexWrap:"wrap",justifyContent:"center"}}>
+          {[{m:1,l:"Tableau"},{m:2,l:"Hippodrome"},{m:3,l:"Picture Bets"}].map(({m,l})=>(
+            <div key={m} onClick={()=>setMode(m)} style={{padding:"10px 16px",background:mode===m?"rgba(201,168,76,0.1)":"#141414",border:mode===m?"2px solid #C9A84C":"1px solid rgba(255,255,255,0.05)",borderRadius:4,cursor:"pointer",textAlign:"center"}}>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:900,color:mode===m?"#C9A84C":"#BFB9AD"}}>{m}</div>
+              <div style={{fontSize:7,color:"#BFB9AD",marginTop:1}}>{l}</div>
+            </div>))}
         </div>
-
-        {/* Dozens */}
-        <div style={styles.outsideBets}>
-          <div />
-          <div style={styles.dozenCell}>1ère Douzaine</div>
-          <div style={styles.dozenCell}>2ème Douzaine</div>
-          <div style={styles.dozenCell}>3ème Douzaine</div>
-        </div>
-
-        {/* Even money */}
-        <div style={styles.evenMoneyRow}>
-          <div />
-          <div style={styles.evenMoneyCell("other")}>1-18</div>
-          <div style={styles.evenMoneyCell("other")}>Pair</div>
-          <div style={styles.evenMoneyCell("rouge")}>Rouge</div>
-          <div style={styles.evenMoneyCell("noir")}>Noir</div>
-          <div style={styles.evenMoneyCell("other")}>Impair</div>
-          <div style={styles.evenMoneyCell("other")}>19-36</div>
-        </div>
+        <button onClick={()=>mode===1?start1():mode===2?start2():start3()} style={{padding:"12px 36px",background:"#C9A84C",color:"#0A0A0A",border:"none",borderRadius:4,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Commencer</button>
       </div>
-    </div>
-  );
+    </div>);
 
-  const renderBets = () => (
-    <div style={styles.card}>
-      <div style={styles.cardTitle}>
-        🎯 Mises sur la table
-      </div>
-      {bets.map((bet, i) => {
-        const info = BET_TYPES[bet.type];
-        const won = screen === "result" ? isWinningBet(bet, winningNumber) : null;
-        const payout = won ? bet.amount * info.payout + bet.amount : 0;
-        return (
-          <div key={i} style={styles.betRow}>
-            <div>
-              <div style={styles.betType}>{info.name}</div>
-              <div style={styles.betNums}>
-                {bet.numbers.length > 0 && bet.numbers.length <= 6
-                  ? bet.numbers.join(", ")
-                  : info.description}
-              </div>
+  // ─── EXO 1: TABLEAU ───
+  if(mode===1){
+    const CW=44,CH=34;
+    const ZW=38;
+    const COLS=12,ROWS=3;
+    const gridW=COLS*CW,gridH=ROWS*CH;
+    const colW=28;
+    const totalW=ZW+gridW+colW;
+    const dotSz=14;
+
+    const grid=[[3,6,9,12,15,18,21,24,27,30,33,36],[2,5,8,11,14,17,20,23,26,29,32,35],[1,4,7,10,13,16,19,22,25,28,31,34]];
+
+    const allDots=[];
+    for(let r=0;r<3;r++)for(let c=0;c<12;c++){
+      const n=grid[r][c];
+      allDots.push({id:`${n}`,type:"plein",x:ZW+c*CW+CW/2,y:r*CH+CH/2,key:`${n}`});
+    }
+    allDots.push({id:"0",type:"plein",x:ZW/2,y:gridH/2,key:"0"});
+    for(let r=0;r<3;r++)for(let c=0;c<11;c++){
+      const a=grid[r][c],b=grid[r][c+1];
+      allDots.push({id:`ch${a}_${b}`,type:"cheval",x:ZW+(c+1)*CW,y:r*CH+CH/2,key:[a,b].sort((x,y)=>x-y).join(",")});
+    }
+    for(let r=0;r<2;r++)for(let c=0;c<12;c++){
+      const a=grid[r][c],b=grid[r+1][c];
+      allDots.push({id:`cv${a}_${b}`,type:"cheval",x:ZW+c*CW+CW/2,y:(r+1)*CH,key:[a,b].sort((x,y)=>x-y).join(",")});
+    }
+    allDots.push({id:"ch0_1",type:"cheval",x:ZW,y:2*CH+CH/2,key:"0,1"});
+    allDots.push({id:"ch0_2",type:"cheval",x:ZW,y:1*CH+CH/2,key:"0,2"});
+    allDots.push({id:"ch0_3",type:"cheval",x:ZW,y:0*CH+CH/2,key:"0,3"});
+    for(let r=0;r<2;r++)for(let c=0;c<11;c++){
+      const a=grid[r][c],b=grid[r][c+1],d=grid[r+1][c],e=grid[r+1][c+1];
+      allDots.push({id:`ca${a}`,type:"carre",x:ZW+(c+1)*CW,y:(r+1)*CH,key:[a,b,d,e].sort((x,y)=>x-y).join(",")});
+    }
+    const transDots=[];
+    for(let c=0;c<12;c++){
+      const base=c*3+1;
+      transDots.push({id:`tr${base}`,type:"transversale",x:ZW+c*CW+CW/2,y:gridH,key:`${base},${base+1},${base+2}`});
+    }
+    const sixDots=[];
+    for(let c=0;c<11;c++){
+      const b1=c*3+1,b2=(c+1)*3+1;
+      sixDots.push({id:`sx${b1}`,type:"sixain",x:ZW+(c+1)*CW,y:gridH,key:`${b1},${b1+1},${b1+2},${b2},${b2+1},${b2+2}`});
+    }
+
+    return(
+    <div style={{minHeight:"100vh",background:"#080808",color:"#F5F0E8",fontFamily:"'DM Sans',sans-serif"}}>
+      <SimulatorHeader title="Roulette Anglaise" badge="Roulette · Tableau" stats={statsText} onBackToMenu={()=>setScreen("menu")} />
+      <div style={{maxWidth:700,margin:"0 auto",padding:"10px 6px"}}>
+        <div style={{textAlign:"center",marginBottom:8}}>
+          <span style={{fontSize:14,fontWeight:700,color:"#C9A84C"}}>{exo?.label}</span>
+          {wrong&&<span style={{fontSize:14,color:"#C62828",fontWeight:700,marginLeft:8}}>✗</span>}
+        </div>
+        <div style={{background:"#0B5E2F",borderRadius:6,border:"4px solid #3A2510",boxShadow:"inset 0 0 30px rgba(0,0,0,0.15),0 4px 20px rgba(0,0,0,0.4)",padding:"8px 6px",overflowX:"auto"}}>
+          <div style={{position:"relative",width:totalW,height:gridH+dotSz,margin:"0 auto"}}>
+            <div style={{position:"absolute",left:0,top:0,width:ZW,height:gridH,background:"#0B7A3E",border:"1.5px solid rgba(201,168,76,0.3)",borderRadius:"3px 0 0 3px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <span style={{fontSize:20,fontWeight:900,color:"#fff"}}>0</span>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={styles.betAmount}>{bet.amount}€</div>
-              {screen === "result" && (
-                <div style={won ? styles.betWin : styles.betLose}>
-                  {won ? `+${payout}€` : "Perdu"}
-                </div>
-              )}
-            </div>
+            {grid.map((row,r)=>row.map((n,c)=>{
+              const isR=RED.has(n);
+              return(<div key={n} style={{position:"absolute",left:ZW+c*CW,top:r*CH,width:CW,height:CH,background:isR?"#C62828":"#1a1a1a",border:"1px solid rgba(201,168,76,0.25)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <span style={{fontSize:13,fontWeight:800,color:"#fff"}}>{n}</span>
+              </div>);
+            }))}
+            {["col3","col2","col1"].map((id,i)=>(
+              <div key={id} onClick={()=>check(id)} style={{position:"absolute",left:ZW+gridW,top:i*CH,width:colW,height:CH,background:"#0B5E2F",border:"1px solid rgba(201,168,76,0.2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:8,fontWeight:700,color:"#fff"}}
+                onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,0.15)";}} onMouseLeave={e=>{e.currentTarget.style.background="#0B5E2F";}}>2:1</div>
+            ))}
+            {allDots.map(d=>(
+              <div key={d.id} onClick={()=>check(d.key)} style={{position:"absolute",left:d.x-dotSz/2,top:d.y-dotSz/2,width:dotSz,height:dotSz,borderRadius:"50%",border:"none",background:"transparent",cursor:"pointer",zIndex:5,transition:"all 0.15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.background="rgba(100,180,255,0.25)";e.currentTarget.style.transform="scale(1.3)";}}
+                onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.transform="scale(1)";}}/>
+            ))}
+            {transDots.map(d=>(
+              <div key={d.id} onClick={()=>check(d.key)} style={{position:"absolute",left:d.x-dotSz/2,top:d.y-dotSz/2,width:dotSz,height:dotSz,borderRadius:"50%",border:"none",background:"transparent",cursor:"pointer",zIndex:6,transition:"all 0.15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.background="rgba(76,175,80,0.3)";e.currentTarget.style.transform="scale(1.3)";}}
+                onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.transform="scale(1)";}}/>
+            ))}
+            {sixDots.map(d=>(
+              <div key={d.id} onClick={()=>check(d.key)} style={{position:"absolute",left:d.x-dotSz/2,top:d.y-dotSz/2,width:dotSz,height:dotSz,borderRadius:"50%",border:"none",background:"transparent",cursor:"pointer",zIndex:6,transition:"all 0.15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,193,7,0.3)";e.currentTarget.style.transform="scale(1.3)";}}
+                onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.transform="scale(1)";}}/>
+            ))}
           </div>
-        );
-      })}
-      <div style={{ 
-        marginTop: 12, paddingTop: 12, 
-        borderTop: "1px solid rgba(201,168,76,0.12)",
-        display: "flex", justifyContent: "space-between",
-        fontSize: 13, fontWeight: 700, color: "#C9A84C",
-      }}>
-        <span>Total misé</span>
-        <span>{bets.reduce((s, b) => s + b.amount, 0)}€</span>
-      </div>
-    </div>
-  );
-
-  const renderScores = () => (
-    <div style={styles.card}>
-      <div style={styles.cardTitle}>📊 Score</div>
-      <div style={styles.scoreGrid}>
-        <div style={styles.scoreStat}>
-          <div style={styles.scoreNum}>{score}</div>
-          <div style={styles.scoreLabel}>Points</div>
-        </div>
-        <div style={styles.scoreStat}>
-          <div style={styles.scoreNum}>{streak}🔥</div>
-          <div style={styles.scoreLabel}>Série</div>
-        </div>
-        <div style={styles.scoreStat}>
-          <div style={styles.scoreNum}>{totalRounds > 0 ? Math.round(correctRounds / totalRounds * 100) : 0}%</div>
-          <div style={styles.scoreLabel}>Précision</div>
-        </div>
-        <div style={styles.scoreStat}>
-          <div style={styles.scoreNum}>{totalRounds}</div>
-          <div style={styles.scoreLabel}>Coups joués</div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // ============================================================
-  // SCREENS
-  // ============================================================
-
-  if (screen === "menu") {
-    return (
-      <div className="cp-sim-shell cp-sim-page" style={styles.app}>
-        <div style={styles.noise} />
-        <SimulatorHeader badge="Simulateur Roulette" title="Roulette" />
-        <div className="cp-sim-main" style={styles.main}>
-          <div className="cp-sim-menu-shell" style={styles.menuWrap}>
-            <div>
-              <div style={{
-                textAlign: "center", fontSize: 11, fontWeight: 700,
-                letterSpacing: "0.2em", textTransform: "uppercase",
-                color: "#C9A84C", marginBottom: 16,
-              }}>Entraînement paiements</div>
-              <h1 style={styles.menuTitle}>
-                Calculez les paiements<br />
-                <span style={{ color: "#C9A84C", fontStyle: "italic" }}>comme un pro</span>
-              </h1>
-            </div>
-            <p className="cp-sim-menu-copy" style={styles.menuSub}>
-              Des mises aléatoires sont placées sur le tapis. Un numéro gagnant est tiré. 
-              Calculez le montant total à payer aux joueurs — rapidement et sans erreur.
-            </p>
-
-            <div>
-              <div style={{
-                textAlign: "center", fontSize: 10, fontWeight: 600,
-                letterSpacing: "0.15em", textTransform: "uppercase",
-                color: "#BFB9AD", marginBottom: 10,
-              }}>Difficulté</div>
-              <div style={styles.diffGrid}>
-                {[1,2,3,4,5].map(d => (
-                  <div
-                    key={d}
-                    style={styles.diffBtn(difficulty === d)}
-                    onClick={() => setDifficulty(d)}
-                  >
-                    <div style={styles.diffNum}>{d}</div>
-                    <div style={styles.diffLabel}>
-                      {d === 1 ? "Facile" : d === 2 ? "Normal" : d === 3 ? "Dur" : d === 4 ? "Expert" : "Élite"}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="cp-sim-info-card cp-sim-info-card-muted" style={{ fontSize: 12, color: "#BFB9AD", lineHeight: 1.7, maxWidth: 460, textAlign: "center" }}>
-              <strong style={{ color: "#C9A84C" }}>Niveau {difficulty}</strong> — {
-                difficulty === 1 ? "1 mise simple (plein ou chance simple). Idéal pour débuter." :
-                difficulty === 2 ? "2-3 mises variées. Les douzaines et colonnes apparaissent." :
-                difficulty === 3 ? "3-4 mises de tous types. Chevaux, carrés et sixains inclus." :
-                difficulty === 4 ? "4-5 mises complexes avec montants variables." :
-                "5+ mises, tous types, gros montants. Vitesse et précision requises."
-              }
-            </div>
-
-            <button style={styles.startBtn} onClick={startRound}>
-              Lancer l&apos;entraînement
-            </button>
-
-            {totalRounds > 0 && (
-              <div style={{ fontSize: 12, color: "#BFB9AD", textAlign: "center" }}>
-                Session en cours : {correctRounds}/{totalRounds} corrects · Score : {score} · Meilleure série : {bestStreak}
-              </div>
-            )}
+          <div style={{display:"flex",gap:0,marginTop:0,marginLeft:ZW,marginRight:colW}}>
+            {[{id:"dz1",l:"1ere 12"},{id:"dz2",l:"2eme 12"},{id:"dz3",l:"3eme 12"}].map(d=>(<div key={d.id} onClick={()=>check(d.id)} style={{flex:1,height:22,background:"#0B5E2F",border:"1px solid rgba(201,168,76,0.15)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:9,fontWeight:700,color:"#fff"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,0.12)";}} onMouseLeave={e=>{e.currentTarget.style.background="#0B5E2F";}}>{d.l}</div>))}
+          </div>
+          <div style={{display:"flex",gap:0,marginTop:0,marginLeft:ZW,marginRight:colW}}>
+            {[{id:"manque",l:"1-18"},{id:"pair",l:"PAIR"},{id:"rouge",l:"◆",bg:"#C62828"},{id:"noir",l:"◆",bg:"#1a1a1a"},{id:"impair",l:"IMPAIR"},{id:"passe",l:"19-36"}].map(c=>(<div key={c.id} onClick={()=>check(c.id)} style={{flex:1,height:22,background:c.bg||"#0B5E2F",border:"1px solid rgba(201,168,76,0.15)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:8,fontWeight:700,color:"#fff"}} onMouseEnter={e=>{e.currentTarget.style.opacity="0.8";}} onMouseLeave={e=>{e.currentTarget.style.opacity="1";}}>{c.l}</div>))}
           </div>
         </div>
       </div>
-    );
+    </div>);
   }
 
-  if (screen === "training" || screen === "result") {
-    const isResult = screen === "result";
-    const lastResult = history.length > 0 ? history[history.length - 1] : null;
-    const wasCorrect = lastResult?.isCorrect;
+  // ─── EXO 2: HIPPODROME ───
+  if(mode===2){
+    const ex=hipExo;const hipNeeded=ex?.bet?.n?.length||0;const hipMulti=hipNeeded>1;
+    const hipClickNum=(n)=>{if(!hipMulti){hipCheck(`${n}`);return;}const ns=new Set(hipSel);if(ns.has(n))ns.delete(n);else ns.add(n);setHipSel(ns);if(ns.size===hipNeeded){hipCheck([...ns].sort((a,b)=>a-b).join(","));setHipSel(new Set());}};
 
-    return (
-      <div className="cp-sim-shell cp-sim-page" style={styles.app}>
-        <div style={styles.noise} />
-        <SimulatorHeader
-          badge="Simulateur Roulette"
-          title="Roulette"
-          stats={`⏱ ${timer}s · Coup #${round}`}
-          onBackToMenu={() => setScreen("menu")}
-        />
+    const TOP=[10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35];
+    const BOT=[30,11,36,13,27,6,34,17,25,2,21,4,19,15,32];
+    const C=28;
+    const cols=TOP.length;
+    const arcW=C*1.8;
+    const bodyW=cols*C;
+    const totalW=arcW+bodyW+arcW;
+    const rowH=C+4;
+    const labelH=C+2;
+    const topY=0,midY=rowH,botY=rowH+labelH;
+    const fullH=botY+rowH;
+    const ox=arcW;
+    const tiersCols=5,orphCols=5,voisCols=7;
 
-        <div className="cp-sim-main" style={styles.main}>
-          <div className="cp-sim-stage-layout" style={styles.trainingLayout}>
-            {/* Left: Table */}
-            <div>
-              {renderTable()}
-            </div>
+    const HC=({n,x,y,w,h,rad,fs})=>{
+      if(n===null||n===undefined)return null;
+      const isR=RED.has(n);const isSel2=hipSel.has(n);
+      return(<div onClick={()=>hipClickNum(n)} style={{position:"absolute",left:x,top:y,width:w||C,height:h||rowH,borderRadius:rad||0,background:isSel2?"rgba(201,168,76,0.85)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:fs||11,fontWeight:800,color:isSel2?"#0A0A0A":isR?"#E53935":"#E8DCC0",transition:"all 0.15s",zIndex:2,userSelect:"none"}}
+        onMouseEnter={e=>{if(!isSel2){e.currentTarget.style.background="rgba(201,168,76,0.18)";e.currentTarget.style.transform="scale(1.08)";}}}
+        onMouseLeave={e=>{if(!isSel2){e.currentTarget.style.background="transparent";e.currentTarget.style.transform="scale(1)";}}}>{n}</div>);
+    };
 
-            {/* Right: Panel */}
-            <div className="cp-sim-side-stack" style={styles.sidePanel}>
-              {renderScores()}
-              {renderBets()}
+    const g1="rgba(186,155,70,0.6)";
+    const g2="rgba(186,155,70,0.25)";
+    const g3="rgba(186,155,70,0.12)";
 
-              {/* Input / Result */}
-              <div style={styles.card}>
-                {!isResult ? (
-                  <>
-                    <div style={styles.cardTitle}>
-                      💰 Paiement total à effectuer ?
-                    </div>
-                    <p style={{ fontSize: 12, color: "#BFB9AD", marginBottom: 12, lineHeight: 1.6 }}>
-                      Incluez le remboursement des mises gagnantes. Si aucune mise ne gagne, répondez 0.
-                    </p>
-                    <div style={styles.inputWrap}>
-                      <input
-                        ref={inputRef}
-                        type="number"
-                        value={userAnswer}
-                        onChange={e => setUserAnswer(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Montant en €"
-                        style={styles.input}
-                      />
-                      <button
-                        style={{
-                          ...styles.submitBtn,
-                          opacity: userAnswer.length > 0 ? 1 : 0.4,
-                          pointerEvents: userAnswer.length > 0 ? "auto" : "none",
-                        }}
-                        onClick={submitAnswer}
-                      >
-                        Valider
-                      </button>
-                    </div>
-                    <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <button style={styles.hintBtn} onClick={() => setShowHint(!showHint)}>
-                        {showHint ? "Masquer l'aide" : "💡 Aide"}
-                      </button>
-                      <span style={{ fontSize: 11, color: "rgba(191,185,173,0.4)" }}>
-                        Entrée pour valider
-                      </span>
-                    </div>
-                    {showHint && (
-                      <div style={styles.hintBox}>
-                        <strong style={{ color: "#C9A84C" }}>Rappel des paiements :</strong><br />
-                        Plein = 35:1 · Cheval = 17:1 · Transversale = 11:1<br />
-                        Carré = 8:1 · Sixain = 5:1 · Douzaine/Colonne = 2:1<br />
-                        Chances simples = 1:1<br /><br />
-                        <em>Le paiement inclut toujours le remboursement de la mise.</em>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={styles.resultBig(wasCorrect)}>
-                        {wasCorrect ? "✓ Correct !" : "✗ Incorrect"}
-                      </div>
-                      <div style={styles.resultPayout}>{correctAnswer}€</div>
-                      <div style={{ fontSize: 11, color: "#BFB9AD", marginTop: 4 }}>
-                        Paiement correct
-                      </div>
-                      {!wasCorrect && (
-                        <div style={styles.resultYours(false)}>
-                          Votre réponse : {lastResult?.userAnswer}€
-                        </div>
-                      )}
-                      {wasCorrect && (
-                        <div style={{
-                          marginTop: 8, fontSize: 12, color: "#2E7D46", fontWeight: 600,
-                        }}>
-                          +{lastResult?.score} points · {lastResult?.time}s
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Breakdown */}
-                    <div style={{
-                      marginTop: 16, paddingTop: 16,
-                      borderTop: "1px solid rgba(255,255,255,0.06)",
-                    }}>
-                      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#BFB9AD", marginBottom: 8 }}>
-                        Détail du calcul
-                      </div>
-                      {bets.map((bet, i) => {
-                        const info = BET_TYPES[bet.type];
-                        const won = isWinningBet(bet, winningNumber);
-                        return (
-                          <div key={i} style={{
-                            fontSize: 12, color: "#BFB9AD", lineHeight: 1.8,
-                            padding: "4px 0",
-                          }}>
-                            <span style={{ color: won ? "#2E7D46" : "#C62828" }}>
-                              {won ? "✓" : "✗"}
-                            </span>{" "}
-                            {info.name} {bet.amount}€ × {info.payout}:1 ={" "}
-                            <strong style={{ color: won ? "#C9A84C" : "rgba(191,185,173,0.4)" }}>
-                              {won ? `${bet.amount * info.payout + bet.amount}€` : "0€"}
-                            </strong>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <button style={styles.nextBtn} onClick={startRound}>
-                      Coup suivant →
-                    </button>
-                    <button
-                      style={{ ...styles.backBtn, width: "100%", marginTop: 8, textAlign: "center" }}
-                      onClick={() => setScreen("menu")}
-                    >
-                      Retour au menu
-                    </button>
-                  </>
-                )}
+    return(
+      <div style={{minHeight:"100vh",background:"#080808",color:"#F5F0E8",fontFamily:"'DM Sans',sans-serif"}}>
+        <SimulatorHeader title="Roulette Anglaise" badge="Roulette · Hippodrome" stats={statsText} onBackToMenu={()=>setScreen("menu")} />
+        <div style={{maxWidth:640,margin:"0 auto",padding:"12px 6px"}}>
+          <div style={{textAlign:"center",marginBottom:10}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#C9A84C"}}>{ex?.sectorName}</div>
+            <div style={{fontSize:11,color:"#BFB9AD",marginTop:3}}>{ex?.label} <span style={{color:"#888"}}>({ex?.bet?.c} jeton{ex?.bet?.c>1?"s":""})</span></div>
+            {hipWrong&&<div style={{fontSize:14,color:"#C62828",fontWeight:700,marginTop:4}}>✗</div>}
+          </div>
+          <div style={{background:"linear-gradient(170deg,#1A6840,#165C38 40%,#125030)",borderRadius:10,border:"4px solid #2E1C0C",boxShadow:"0 8px 40px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.02)",padding:"12px 10px",overflowX:"auto"}}>
+            <div style={{position:"relative",width:totalW,height:fullH,margin:"0 auto"}}>
+              <svg width={totalW} height={fullH} style={{position:"absolute",inset:0,zIndex:1,pointerEvents:"none"}}>
+                <path d={`M${ox} ${topY+1} Q${ox-arcW*0.9} ${topY+1} ${ox-arcW*0.9} ${fullH/2} Q${ox-arcW*0.9} ${botY+rowH-1} ${ox} ${botY+rowH-1}`} fill="none" stroke={g1} strokeWidth="1.5"/>
+                <path d={`M${ox} ${midY} Q${ox-arcW*0.3} ${midY} ${ox-arcW*0.3} ${(midY+botY)/2} Q${ox-arcW*0.3} ${botY} ${ox} ${botY}`} fill="none" stroke={g1} strokeWidth="1"/>
+                <line x1={ox-arcW*0.9} y1={midY} x2={ox} y2={midY} stroke={g2} strokeWidth="0.7"/>
+                <line x1={ox-arcW*0.9} y1={botY} x2={ox} y2={botY} stroke={g2} strokeWidth="0.7"/>
+                <path d={`M${ox+bodyW} ${topY+1} Q${ox+bodyW+arcW*0.9} ${topY+1} ${ox+bodyW+arcW*0.9} ${fullH/2} Q${ox+bodyW+arcW*0.9} ${botY+rowH-1} ${ox+bodyW} ${botY+rowH-1}`} fill="none" stroke={g1} strokeWidth="1.5"/>
+                <path d={`M${ox+bodyW} ${midY} Q${ox+bodyW+arcW*0.3} ${midY} ${ox+bodyW+arcW*0.3} ${(midY+botY)/2} Q${ox+bodyW+arcW*0.3} ${botY} ${ox+bodyW} ${botY}`} fill="none" stroke={g1} strokeWidth="1"/>
+                <line x1={ox+bodyW} y1={midY} x2={ox+bodyW+arcW*0.9} y2={midY} stroke={g2} strokeWidth="0.7"/>
+                <line x1={ox+bodyW} y1={botY} x2={ox+bodyW+arcW*0.9} y2={botY} stroke={g2} strokeWidth="0.7"/>
+                {[0.33,0.66].map((f,i)=><line key={`rf${i}`} x1={ox+bodyW+4} y1={midY+(botY-midY)*f} x2={ox+bodyW+arcW*0.85} y2={midY+(botY-midY)*f} stroke={g3} strokeWidth="0.5"/>)}
+                <line x1={ox} y1={topY} x2={ox+bodyW} y2={topY} stroke={g1} strokeWidth="1.8"/>
+                <line x1={ox} y1={midY} x2={ox+bodyW} y2={midY} stroke={g1} strokeWidth="1.2"/>
+                <line x1={ox} y1={botY} x2={ox+bodyW} y2={botY} stroke={g1} strokeWidth="1.2"/>
+                <line x1={ox} y1={botY+rowH} x2={ox+bodyW} y2={botY+rowH} stroke={g1} strokeWidth="1.8"/>
+                <line x1={ox} y1={topY} x2={ox} y2={botY+rowH} stroke={g1} strokeWidth="1.8"/>
+                <line x1={ox+bodyW} y1={topY} x2={ox+bodyW} y2={botY+rowH} stroke={g1} strokeWidth="1.8"/>
+                {TOP.map((_,i)=>{if(!i)return null;return <line key={`td${i}`} x1={ox+i*C} y1={topY+1} x2={ox+i*C} y2={midY-1} stroke={g2} strokeWidth="0.6"/>;})}
+                {BOT.map((_,i)=>{if(!i)return null;return <line key={`bd${i}`} x1={ox+i*C} y1={botY+1} x2={ox+i*C} y2={botY+rowH-1} stroke={g2} strokeWidth="0.6"/>;})}
+                <line x1={ox+tiersCols*C} y1={midY} x2={ox+tiersCols*C} y2={botY} stroke={g1} strokeWidth="1.2"/>
+                <line x1={ox+(tiersCols+orphCols)*C} y1={midY} x2={ox+(tiersCols+orphCols)*C} y2={botY} stroke={g1} strokeWidth="1.2"/>
+              </svg>
+              <HC n={8} x={1} y={topY} w={arcW-2} h={midY-topY} fs={12} rad="8px 0 0 0"/>
+              <HC n={23} x={1} y={botY} w={arcW-2} h={rowH} fs={12} rad="0 0 0 8px"/>
+              {TOP.map((n,i)=><HC key={`t${n}`} n={n} x={ox+i*C} y={topY} w={C} h={rowH}/>)}
+              {BOT.map((n,i)=><HC key={`b${n}`} n={n} x={ox+i*C} y={botY} w={C} h={rowH}/>)}
+              <HC n={3} x={ox+bodyW+3} y={topY} w={arcW-6} h={midY-topY} fs={11} rad="0 8px 0 0"/>
+              <HC n={26} x={ox+bodyW+3} y={midY+1} w={arcW-6} h={botY-midY-2} fs={12}/>
+              <HC n={0} x={ox+bodyW+3} y={botY} w={arcW-6} h={rowH} fs={11} rad="0 0 8px 0"/>
+              <div style={{position:"absolute",left:ox,top:midY,width:tiersCols*C,height:labelH,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none",background:"rgba(0,0,0,0.06)"}}>
+                <span style={{fontSize:10,fontWeight:800,color:"rgba(186,155,70,0.35)",letterSpacing:"0.15em",fontFamily:"'Playfair Display',serif"}}>TIERS</span>
+              </div>
+              <div style={{position:"absolute",left:ox+tiersCols*C,top:midY,width:orphCols*C,height:labelH,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none",background:"rgba(0,0,0,0.06)"}}>
+                <span style={{fontSize:9,fontWeight:800,color:"rgba(186,155,70,0.35)",letterSpacing:"0.1em",fontFamily:"'Playfair Display',serif"}}>ORPHELINS</span>
+              </div>
+              <div style={{position:"absolute",left:ox+(tiersCols+orphCols)*C,top:midY,width:voisCols*C,height:labelH,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none",background:"rgba(0,0,0,0.06)"}}>
+                <span style={{fontSize:7.5,fontWeight:800,color:"rgba(186,155,70,0.35)",letterSpacing:"0.08em",fontFamily:"'Playfair Display',serif"}}>VOISINS DU ZERO</span>
               </div>
             </div>
           </div>
+          {hipMulti&&hipSel.size>0&&<div style={{textAlign:"center",marginTop:6,fontSize:10,color:"#BFB9AD"}}>Selection : {[...hipSel].sort((a,b)=>a-b).join(", ")}</div>}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5,marginTop:10,fontSize:8,color:"#BFB9AD"}}>
+            <div style={{background:"#141414",borderRadius:4,padding:8}}><div style={{fontWeight:700,color:"#C9A84C",marginBottom:3,fontSize:9}}>Voisins (9j)</div><div style={{lineHeight:1.5}}>Trio 0-2-3 (x2) · Ch 4/7 · 12/15 · 18/21 · 19/22 · 32/35 · Carre 25-29 (x2)</div></div>
+            <div style={{background:"#141414",borderRadius:4,padding:8}}><div style={{fontWeight:700,color:"#C9A84C",marginBottom:3,fontSize:9}}>Tiers (6j)</div><div style={{lineHeight:1.5}}>Ch 5/8 · 10/11 · 13/16 · 23/24 · 27/30 · 33/36</div></div>
+            <div style={{background:"#141414",borderRadius:4,padding:8}}><div style={{fontWeight:700,color:"#C9A84C",marginBottom:3,fontSize:9}}>Orphelins (5j)</div><div style={{lineHeight:1.5}}>Plein 1 · Ch 6/9 · 14/17 · 17/20 · 31/34</div></div>
+          </div>
+        </div>
+      </div>);
+  }
+
+  // ─── EXO 3: PICTURE BETS ───
+  if(mode===3&&pic){
+    const CW=74,CH=58;
+    const ML=20;
+    const GW=CW*3+ML,GH=CH*3;
+    const Chip=({x,y,stack})=>{
+      const sz=28;
+      return(
+        <div style={{position:"absolute",left:x-sz/2,top:y-sz/2,width:sz,height:sz,borderRadius:"50%",zIndex:10}}>
+          <div style={{position:"absolute",bottom:-2,left:2,right:2,height:6,borderRadius:"50%",background:"rgba(0,0,0,0.3)",filter:"blur(3px)"}}/>
+          <div style={{position:"absolute",inset:0,borderRadius:"50%",background:"radial-gradient(circle at 40% 32%,#F4A830,#D4880A 45%,#B06A00 75%,#8A5200)",border:"2px solid rgba(255,200,100,0.25)",boxShadow:"inset 0 2px 4px rgba(255,230,180,0.25),inset 0 -2px 3px rgba(0,0,0,0.35),0 3px 10px rgba(0,0,0,0.4)",overflow:"hidden"}}>
+            {[0,45,90,135,180,225,270,315].map(a=>{const rd=a*Math.PI/180;return(
+              <div key={a} style={{position:"absolute",left:sz/2-1+Math.cos(rd)*(sz/2-2),top:sz/2-1+Math.sin(rd)*(sz/2-2),width:3,height:2,borderRadius:1,background:"rgba(255,255,255,0.3)",transform:`rotate(${a}deg)`}}/>
+            );})}
+            <div style={{position:"absolute",inset:5,borderRadius:"50%",border:"1.5px solid rgba(255,220,150,0.2)"}}/>
+            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <span style={{fontSize:stack>=10?10:12,fontWeight:900,color:"#fff",textShadow:"0 1px 3px rgba(0,0,0,0.6)"}}>{stack}</span>
+            </div>
+            <div style={{position:"absolute",top:2,left:"18%",width:"40%",height:"22%",borderRadius:"50%",background:"linear-gradient(180deg,rgba(255,255,255,0.25),rgba(255,255,255,0))"}}/>
+          </div>
+        </div>
+      );
+    };
+
+    return(
+    <div style={{minHeight:"100vh",background:"#080808",color:"#F5F0E8",fontFamily:"'DM Sans',sans-serif"}}>
+      <SimulatorHeader title="Roulette Anglaise" badge="Roulette · Picture Bets" stats={statsText} onBackToMenu={()=>setScreen("menu")} />
+      <div style={{maxWidth:500,margin:"0 auto",padding:"16px 12px",textAlign:"center"}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#C9A84C",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:14}}>Quel est le paiement ?</div>
+        <div style={{display:"inline-block",perspective:1000,marginBottom:14}}>
+          <div style={{transform:"rotateX(22deg)",transformStyle:"preserve-3d",display:"inline-block"}}>
+            <div style={{background:"#14663A",borderRadius:4,border:"4px solid #3A2510",boxShadow:"0 30px 70px rgba(0,0,0,0.55),0 8px 20px rgba(0,0,0,0.3),inset 0 0 20px rgba(0,0,0,0.08)",position:"relative",width:GW,height:GH}}>
+              {[0,1,2,3].map(i=><div key={`vl${i}`} style={{position:"absolute",left:ML+i*CW,top:0,width:2,height:GH,background:"#C9A84C",opacity:0.5}}/>)}
+              {[0,1,2,3].map(i=><div key={`hl${i}`} style={{position:"absolute",left:ML,top:i*CH,width:CW*3,height:2,background:"#C9A84C",opacity:0.5}}/>)}
+              <div style={{position:"absolute",left:ML,top:0,width:2,height:GH,background:"#C9A84C",opacity:0.7}}/>
+              {pic.nums.map((row,r)=>row.map((n,c)=>{
+                if(!n)return null;
+                const isR=RED.has(n);
+                const isWin=n===pic.winNum;
+                return(<div key={`num${r}${c}`} style={{position:"absolute",left:ML+c*CW,top:r*CH,width:CW,height:CH,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <span style={{fontSize:20,fontWeight:900,color:isR?"#E53935":"#F5F0E8",opacity:isWin?1:0.35,textShadow:isWin?"0 0 8px rgba(255,255,255,0.2)":"none"}}>{n}</span>
+                </div>);
+              }))}
+              {pic.chips.map(chip=>{
+                const px=ML+chip.x*CW*3;
+                const py=chip.y*GH;
+                return <Chip key={chip.id} x={px} y={py} stack={chip.stack}/>;
+              })}
+            </div>
+          </div>
+        </div>
+        <div style={{maxWidth:320,margin:"0 auto"}}>
+          {picWrong&&<div style={{fontSize:12,color:"#C62828",fontWeight:700,marginBottom:6}}>✗</div>}
+          <div style={{display:"flex",gap:6}}>
+            <input ref={picRef} type="number" value={picInput} onChange={e=>setPicInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&picInput.trim()&&picSubmit()} placeholder="Paiement" style={{flex:1,padding:"10px 14px",background:"#0a0a0a",border:"1px solid rgba(201,168,76,0.2)",borderRadius:4,color:"#F5F0E8",fontSize:20,fontWeight:700,fontFamily:"'DM Sans',sans-serif",outline:"none",textAlign:"center"}} autoFocus/>
+            <button onClick={()=>picInput.trim()&&picSubmit()} style={{padding:"10px 24px",background:picInput.trim()?"#C9A84C":"#333",color:"#0A0A0A",border:"none",borderRadius:4,fontSize:12,fontWeight:700,cursor:picInput.trim()?"pointer":"default",fontFamily:"'DM Sans',sans-serif"}}>OK</button>
+          </div>
+        </div>
+        <div style={{marginTop:12,display:"flex",gap:10,justifyContent:"center",fontSize:8,color:"#666"}}>
+          <span>Plein 35</span><span>Cheval 17</span><span>Transv. 11</span><span>Carre 8</span><span>Sixain 5</span>
         </div>
       </div>
-    );
+    </div>);
   }
 
   return null;

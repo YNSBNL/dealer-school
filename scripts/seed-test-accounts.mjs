@@ -44,6 +44,7 @@ const ADMIN_ACCOUNT = {
   email: "admin@dealer-school.com",
   password: "Cr0up!3r#Adm1n$2025",
   display_name: "Admin",
+  username: "admin",
   role: "admin",
 };
 
@@ -55,6 +56,7 @@ const DEALER_ACCOUNTS = Array.from({ length: 10 }, (_, i) => {
     email: `dealer${num}@dealer-school.com`,
     password: DEALER_PASSWORD,
     display_name: `Dealer ${num}`,
+    username: `dealer${num}`,
     role: "user",
   };
 });
@@ -101,6 +103,7 @@ async function createAccount(account) {
             id: data.user.id,
             display_name: account.display_name,
             email: account.email,
+            username: account.username,
             role: account.role,
             xp: 0,
             level: 1,

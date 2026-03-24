@@ -8,7 +8,7 @@ import { getAuthErrorMessage, getSupabaseAuthErrorMessage, sanitizeAuthRedirect 
 import { Button, Card, ErrorState, Input, SectionHeader } from "@/components/ui";
 
 function LoginContent() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,13 +20,32 @@ function LoginContent() {
   const configured = isSupabaseConfigured();
   const fallbackReason = getLocalDevFallbackReason();
 
+  const resolveEmail = async (input) => {
+    const trimmed = input.trim().toLowerCase();
+    // If it looks like an email, use it directly
+    if (trimmed.includes("@")) return trimmed;
+    // Otherwise, lookup username -> email
+    try {
+      const res = await fetch("/api/auth/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: trimmed }),
+      });
+      const data = await res.json();
+      if (data.email) return data.email;
+    } catch {}
+    return null;
+  };
+
   const handleLogin = async (event) => {
     event.preventDefault();
     setError("");
     setLoading(true);
     try {
       if (!configured || !supabase) throw new Error("Le service de connexion n est pas disponible.");
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+      const email = await resolveEmail(identifier);
+      if (!email) throw new Error("Nom d'utilisateur introuvable.");
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) throw signInError;
       router.push(redirect);
       router.refresh();
@@ -46,7 +65,7 @@ function LoginContent() {
               {authError ? <ErrorState tone="info" title="Connexion a relancer" description={getAuthErrorMessage(authError)} style={{ marginTop: 16 }} /> : null}
               {error ? <ErrorState description={error} style={{ marginTop: 16 }} /> : null}
               <form onSubmit={handleLogin} style={{ marginTop: 22 }}>
-                <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@dealer-school.com" required={configured} />
+                <Input label="Identifiant" type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="admin, dealer01 ou email" required={configured} />
                 <Input label="Mot de passe" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Votre mot de passe" required={configured} style={{ marginTop: 14 }} />
                 <Button type="submit" block style={{ marginTop: 20, opacity: loading ? 0.75 : 1 }} disabled={loading || !configured}>{loading ? "Connexion..." : configured ? "Se connecter" : "Configuration requise"}</Button>
               </form>

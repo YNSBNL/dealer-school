@@ -65,15 +65,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 6. Allow public to lookup username -> email (for login)
 -- This policy lets unauthenticated users query email by username
-DROP POLICY IF EXISTS "Public can lookup username" ON public.profiles;
-CREATE POLICY "Public can lookup username"
-  ON public.profiles FOR SELECT
-  USING (true)
-  WITH CHECK (true);
-
--- Actually, we need a more targeted approach. Drop the broad policy
--- and create a secure function instead.
-DROP POLICY IF EXISTS "Public can lookup username" ON public.profiles;
+-- Username lookup is handled by the secure function below (no broad RLS policy needed)
 
 -- Secure function: returns email for a given username (callable without auth)
 CREATE OR REPLACE FUNCTION public.get_email_by_username(lookup_username TEXT)

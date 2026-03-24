@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import SimulatorHeader from "@/components/SimulatorHeader";
+import { saveSession } from "@/lib/api";
 
 // ── ENGINE ──
 const SUITS=["♠","♥","♦","♣"],SC={"♠":"#1a1a1a","♥":"#C62828","♦":"#C62828","♣":"#1a1a1a"};
@@ -120,6 +121,7 @@ export default function UltimateTexasSimulator(){
   const [handFound,setHandFound]=useState(new Set());
   const inpRef=useRef(null);
 
+  const logUTH=(isCorrect,nStats)=>{saveSession({game_id:"ultimate-texas",mode:"guidee",score:isCorrect?100:0,accuracy:nStats.total>0?Math.round(nStats.ok/nStats.total*100):0,duration_seconds:0,rounds_played:1,rounds_correct:isCorrect?1:0,errors:isCorrect?[]:["mauvaise reponse"],details:{difficulty:diff}}).catch(()=>null);};
   const statsText = stats.total>0?`${Math.round(stats.ok/stats.total*100)}% · R${stats.rounds+1}`:`R1`;
 
   const deal=(tbl)=>{
@@ -195,7 +197,7 @@ export default function UltimateTexasSimulator(){
         if(p.progPay>0)explain+=`\nProgressif gagne : ${p.progPay}EUR`;
         explain+=`\n\nReponse attendue : ${expected}`;
         setGameOver({player:SEATS[pIdx],explain});
-        setStats(s=>({...s,total:s.total+1}));
+        const nsGO={...stats,total:stats.total+1};setStats(nsGO);logUTH(false,nsGO);
       }else{
         setPayFB({ok:false,exp:expected});
         setStats(s=>({...s,total:s.total+1}));
@@ -207,7 +209,7 @@ export default function UltimateTexasSimulator(){
   const goNextPlayer=()=>{
     let n=pIdx+1;
     if(n<7){setPIdx(n);setStep("player_hand");setWrong(false);setPayInput("");setPayFB(null);}
-    else{setPhase("resolved");setStats(s=>({...s,rounds:s.rounds+1}));}
+    else{setPhase("resolved");const ns={...stats,rounds:stats.rounds+1};setStats(ns);logUTH(true,ns);}
   };
 
   const showDealer=step!=="board";

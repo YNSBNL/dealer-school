@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import SimulatorHeader from "@/components/SimulatorHeader";
+import { saveSession } from "@/lib/api";
 
 // ── ENGINE ──
 const SUITS=["♠","♥","♦","♣"],SC={"♠":"#1a1a1a","♥":"#C62828","♦":"#C62828","♣":"#1a1a1a"};
@@ -92,6 +93,7 @@ export default function BlackjackSimulator(){
   const l3Ref=useRef(null);
   const timerRef=useRef(null);
 
+  const logBJ=(isCorrect,nStats,lvl)=>{saveSession({game_id:"blackjack",mode:"guidee",score:isCorrect?100:0,accuracy:nStats.total>0?Math.round(nStats.ok/nStats.total*100):0,duration_seconds:0,rounds_played:1,rounds_correct:isCorrect?1:0,errors:isCorrect?[]:["mauvaise reponse"],details:{level:lvl}}).catch(()=>null);};
   const statsText = stats.total>0?`${Math.round(stats.ok/stats.total*100)}% · R${stats.rounds+1}`:`R1`;
 
   // ── LEVEL 1: Addition ──
@@ -99,7 +101,7 @@ export default function BlackjackSimulator(){
   const mkL1Deck=()=>{const d=[];for(let x=0;x<6;x++)for(const s of SUITS)for(const r of L1_RANKS)d.push({rank:r,suit:s,id:`${r}${s}${x}${Math.random()}`});for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]];}return d;};
   const l1Deal=()=>{const d=mkL1Deck();setL1Cards([d[0],d[1]]);setDeck(d.slice(2));setL1Done(false);setL1Result("");setPhase("l1");};
   const l1Hit=()=>{if(l1Done)return;const nc=[...l1Cards,deck[0]];setL1Cards(nc);setDeck(d=>d.slice(1));if(ht(nc)>21){setL1Done(true);setL1Result("bust");setTimeout(()=>l1Deal(),1200);}};
-  const l1Stand=()=>{if(l1Done)return;const t=ht(l1Cards);if(t>=17&&t<=21){setL1Done(true);setL1Result("ok");setStats(s=>({...s,score:s.score+15,ok:s.ok+1,total:s.total+1,rounds:s.rounds+1}));setTimeout(()=>l1Deal(),1200);}else{setL1Done(true);setL1Result("fail");setStats(s=>({...s,total:s.total+1}));setTimeout(()=>l1Deal(),1200);}};
+  const l1Stand=()=>{if(l1Done)return;const t=ht(l1Cards);if(t>=17&&t<=21){setL1Done(true);setL1Result("ok");const ns={...stats,score:stats.score+15,ok:stats.ok+1,total:stats.total+1,rounds:stats.rounds+1};setStats(ns);logBJ(true,ns,"L1");setTimeout(()=>l1Deal(),1200);}else{setL1Done(true);setL1Result("fail");const ns={...stats,total:stats.total+1};setStats(ns);logBJ(false,ns,"L1");setTimeout(()=>l1Deal(),1200);}};
 
   // ── LEVEL 2: Entrainement ──
   const deal2=(tbl)=>{
@@ -120,7 +122,7 @@ export default function BlackjackSimulator(){
     setInsuranceOffered(false);
     const dc2=[...dealerCards,deck[0]];const dk=deck.slice(1);setDealerCards(dc2);setDeck(dk);
     if(isBJ(dc2)){
-      setPlayers(ps=>ps.map(p=>({...p,resolved:true,resultText:isBJ(p.cards)?"PUSH":"PERD"})));setStep("resolve");setPhase("resolved");setStats(s=>({...s,rounds:s.rounds+1}));
+      setPlayers(ps=>ps.map(p=>({...p,resolved:true,resultText:isBJ(p.cards)?"PUSH":"PERD"})));setStep("resolve");setPhase("resolved");const nsIns={...stats,rounds:stats.rounds+1};setStats(nsIns);logBJ(true,nsIns,"L2");
     }else{
       const up=players.map(p=>isBJ(p.cards)?{...p,resolved:true,resultText:"BJ 3:2"}:p);setPlayers(up);
       setStep("play");setActiveBox(up.findIndex(p=>!p.resolved));setActiveSplit(0);
@@ -277,7 +279,7 @@ export default function BlackjackSimulator(){
       return{...p,resolved:true,resultText:"PUSH"};
     });
     setPlayers(up);setDealerPhase(false);setStep("resolve");setPhase("resolved");
-    setStats(s=>({...s,rounds:s.rounds+1}));
+    const ns2={...stats,rounds:stats.rounds+1};setStats(ns2);logBJ(true,ns2,"L2");
     setTimeout(()=>deal2(),2000);
   };
 
@@ -309,7 +311,7 @@ export default function BlackjackSimulator(){
 
   const submitL3=()=>{
     const v=parseInt(l3Input);const expected=Math.round(l3Num*1.5);const ok=v===expected;
-    setStats(s=>({...s,score:s.score+(ok?10:0),ok:s.ok+(ok?1:0),total:s.total+1}));
+    const nsL3={...stats,score:stats.score+(ok?10:0),ok:stats.ok+(ok?1:0),total:stats.total+1};setStats(nsL3);logBJ(ok,nsL3,"L3");
     if(!ok){
       if(l3Comp){
         setL3Errors(e=>[...e,{num:l3Num,expected,given:v||"?"}]);

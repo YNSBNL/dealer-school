@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import SimulatorHeader from "@/components/SimulatorHeader";
+import { saveSession } from "@/lib/api";
 
 // ── ENGINE ──
 const SUITS=["♠","♥","♦","♣"],SC={"♠":"#1a1a1a","♥":"#C62828","♦":"#C62828","♣":"#1a1a1a"};
@@ -87,6 +88,7 @@ export default function PuntoBancoSimulator(){
   const l2TimerRef=useRef(null);
   const [winnerWrong,setWinnerWrong]=useState(false);
 
+  const logBAC=(isCorrect,nStats,lvl)=>{saveSession({game_id:"baccarat",mode:"guidee",score:isCorrect?100:0,accuracy:nStats.total>0?Math.round(nStats.ok/nStats.total*100):0,duration_seconds:0,rounds_played:1,rounds_correct:isCorrect?1:0,errors:isCorrect?[]:["mauvaise reponse"],details:{level:lvl}}).catch(()=>null);};
   const statsText = stats.total>0?`${Math.round(stats.ok/stats.total*100)}% · R${stats.rounds+1}`:`R1`;
 
   const dealHand=()=>{
@@ -112,8 +114,8 @@ export default function PuntoBancoSimulator(){
   };
   const answerWinner=(answer)=>{
     const ok=answer===resolution.result;
-    if(ok){setWinnerWrong(false);setStats(s=>({...s,ok:s.ok+1,total:s.total+1,rounds:s.rounds+1}));setStep("done");setTimeout(()=>dealHand(),1500);}
-    else{setWinnerWrong(true);setStats(s=>({...s,total:s.total+1}));}
+    if(ok){setWinnerWrong(false);const ns={...stats,ok:stats.ok+1,total:stats.total+1,rounds:stats.rounds+1};setStats(ns);logBAC(true,ns,"L1");setStep("done");setTimeout(()=>dealHand(),1500);}
+    else{setWinnerWrong(true);const ns={...stats,total:stats.total+1};setStats(ns);logBAC(false,ns,"L1");}
   };
 
   // ── LEVEL 2: Calcul egalite (x8) ──
@@ -144,7 +146,7 @@ export default function PuntoBancoSimulator(){
 
   const submitL2=()=>{
     const v=parseInt(l2Input);const expected=l2Num*8;const ok=v===expected;
-    setStats(s=>({...s,ok:s.ok+(ok?1:0),total:s.total+1}));
+    const nsL2={...stats,ok:stats.ok+(ok?1:0),total:stats.total+1};setStats(nsL2);logBAC(ok,nsL2,"L2");
     if(!ok){
       if(l2Comp){
         setL2Errors(e=>[...e,{num:l2Num,expected,given:v||"?"}]);

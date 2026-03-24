@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import SimulatorHeader from "@/components/SimulatorHeader";
+import { saveSession } from "@/lib/api";
 
 // ── DATA ──
 const RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
@@ -83,9 +84,10 @@ export default function RouletteSimulator(){
   const start2=()=>{setHipExo(genHipExo());setHipWrong(false);setHipSel(new Set());setScreen("game");};
   const start3=()=>{setPic(genPicture());setPicInput("");setPicWrong(false);setScreen("game");setTimeout(()=>picRef.current?.focus(),200);};
 
-  const check=(key)=>{if(key===exo.key){setWrong(false);setStats(s=>({...s,ok:s.ok+1,total:s.total+1,rounds:s.rounds+1}));setTimeout(()=>{setExo(genExo());setSel(new Set());setWrong(false);},400);}else{setWrong(true);setStats(s=>({...s,total:s.total+1}));setSel(new Set());}};
-  const hipCheck=(key)=>{if(key===hipExo.key){setHipWrong(false);setStats(s=>({...s,ok:s.ok+1,total:s.total+1,rounds:s.rounds+1}));setTimeout(()=>{setHipExo(genHipExo());setHipSel(new Set());setHipWrong(false);},400);}else{setHipWrong(true);setStats(s=>({...s,total:s.total+1}));setHipSel(new Set());}};
-  const picSubmit=()=>{const v=parseInt(picInput);if(isNaN(v))return;if(v===pic.pay){setStats(s=>({...s,ok:s.ok+1,total:s.total+1,rounds:s.rounds+1}));setPicWrong(false);setPicInput("");setTimeout(()=>{setPic(genPicture());setTimeout(()=>picRef.current?.focus(),100);},400);}else{setPicWrong(true);setPicInput("");setStats(s=>({...s,total:s.total+1}));setTimeout(()=>picRef.current?.focus(),100);}};
+  const logRound=(isCorrect,nextStats)=>{saveSession({game_id:"roulette",mode:"guidee",score:isCorrect?100:0,accuracy:nextStats.total>0?Math.round(nextStats.ok/nextStats.total*100):0,duration_seconds:0,rounds_played:1,rounds_correct:isCorrect?1:0,errors:isCorrect?[]:["mauvaise reponse"],details:{mode}}).catch(()=>null);};
+  const check=(key)=>{if(key===exo.key){setWrong(false);const ns={ok:stats.ok+1,total:stats.total+1,rounds:stats.rounds+1};setStats(ns);logRound(true,ns);setTimeout(()=>{setExo(genExo());setSel(new Set());setWrong(false);},400);}else{setWrong(true);const ns={ok:stats.ok,total:stats.total+1,rounds:stats.rounds};setStats(ns);logRound(false,ns);setSel(new Set());}};
+  const hipCheck=(key)=>{if(key===hipExo.key){setHipWrong(false);const ns={ok:stats.ok+1,total:stats.total+1,rounds:stats.rounds+1};setStats(ns);logRound(true,ns);setTimeout(()=>{setHipExo(genHipExo());setHipSel(new Set());setHipWrong(false);},400);}else{setHipWrong(true);const ns={ok:stats.ok,total:stats.total+1,rounds:stats.rounds};setStats(ns);logRound(false,ns);setHipSel(new Set());}};
+  const picSubmit=()=>{const v=parseInt(picInput);if(isNaN(v))return;if(v===pic.pay){const ns={ok:stats.ok+1,total:stats.total+1,rounds:stats.rounds+1};setStats(ns);logRound(true,ns);setPicWrong(false);setPicInput("");setTimeout(()=>{setPic(genPicture());setTimeout(()=>picRef.current?.focus(),100);},400);}else{setPicWrong(true);setPicInput("");const ns={ok:stats.ok,total:stats.total+1,rounds:stats.rounds};setStats(ns);logRound(false,ns);setTimeout(()=>picRef.current?.focus(),100);}};
 
   const statsText = stats.total>0?`${Math.round(stats.ok/stats.total*100)}% · R${stats.rounds+1}`:`R1`;
 

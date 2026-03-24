@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import SimulatorHeader from "@/components/SimulatorHeader";
+import { saveSession } from "@/lib/api";
 
 // -- ENGINE --
 const SUITS=["S","H","D","C"],SC={"S":"#1a1a1a","H":"#C62828","D":"#C62828","C":"#1a1a1a"};
@@ -115,6 +116,7 @@ export default function TexasHoldemSimulator(){
   const [compareWrong,setCompareWrong]=useState(false);
   const [stats,setStats]=useState({rounds:0,ok:0,total:0});
   const timerRef=useRef(null);
+  const logTH=(isCorrect,nStats)=>{saveSession({game_id:"casino-holdem",mode:"guidee",score:isCorrect?100:0,accuracy:nStats.total>0?Math.round(nStats.ok/nStats.total*100):0,duration_seconds:0,rounds_played:1,rounds_correct:isCorrect?1:0,errors:isCorrect?[]:["mauvaise reponse"],details:{}}).catch(()=>null);};
 
   const deal=()=>{
     const d=mkDeck();
@@ -154,12 +156,12 @@ export default function TexasHoldemSimulator(){
     else correctAns="Egalite";
     const correct=ans===correctAns;
     if(correct){
-      setStats(s=>({...s,ok:s.ok+1,total:s.total+1,rounds:s.rounds+1}));
+      const ns={...stats,ok:stats.ok+1,total:stats.total+1,rounds:stats.rounds+1};setStats(ns);logTH(true,ns);
       timerRef.current=setTimeout(()=>deal(),800);
       setStep("next");
     }else{
       if(compareAttempt===0){setCompareAttempt(1);setStats(s=>({...s,total:s.total+1}));}
-      else{setCompareWrong(true);setStats(s=>({...s,total:s.total+1,rounds:s.rounds+1}));timerRef.current=setTimeout(()=>deal(),1200);setStep("next");}
+      else{setCompareWrong(true);const ns={...stats,total:stats.total+1,rounds:stats.rounds+1};setStats(ns);logTH(false,ns);timerRef.current=setTimeout(()=>deal(),1200);setStep("next");}
     }
   };
 

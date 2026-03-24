@@ -17,8 +17,9 @@ function formatDate(dateStr) {
 }
 
 export default function AdminPage() {
-  const { isAdmin, loading: authLoading } = useAuth();
+  const { isAdmin, profile, loading: authLoading } = useAuth();
   const router = useRouter();
+  const authReady = !authLoading && profile !== null;
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -44,14 +45,13 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && !isAdmin) {
+    if (!authReady) return;
+    if (!isAdmin) {
       router.replace("/dashboard");
       return;
     }
-    if (!authLoading && isAdmin) {
-      fetchUsers();
-    }
-  }, [authLoading, isAdmin, router, fetchUsers]);
+    fetchUsers();
+  }, [authReady, isAdmin, router, fetchUsers]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -88,7 +88,7 @@ export default function AdminPage() {
     }
   };
 
-  if (authLoading) {
+  if (!authReady) {
     return (
       <AppShell>
         <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-secondary)" }}>
